@@ -1,0 +1,45 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+
+# Claude Code
+.claude/
+
+# Misc
+nul
+
+# Firebase
+.firebase
+firebase-debug.log
+firebase-debug.*.log
+.firebaserc
+
+# Firebase cache
+.cache

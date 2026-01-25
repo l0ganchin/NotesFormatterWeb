@@ -1,0 +1,56 @@
+.api-key-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.api-key-input label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #ccc;
+}
+
+.api-key-field {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.api-key-field input {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: inherit;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.api-key-field input:focus {
+  outline: none;
+  border-color: #E8412A;
+}
+
+.api-key-field input::placeholder {
+  color: #555;
+}
+
+.toggle-visibility {
+  padding: 0.4rem 0.6rem;
+  background: #333;
+  border: none;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.toggle-visibility:hover {
+  background: #444;
+}
+
+.api-key-hint {
+  font-size: 0.65rem;
+  color: #555;
+}

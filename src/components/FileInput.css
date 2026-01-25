@@ -1,0 +1,87 @@
+.file-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.file-input-label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #ccc;
+}
+
+.file-input-area {
+  border: 1px dashed #444;
+  border-radius: 6px;
+  padding: 0.5rem;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.file-input-area.drag-over {
+  border-color: #E8412A;
+  background-color: rgba(232, 65, 42, 0.1);
+}
+
+.file-input-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 0.5rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.file-input-textarea:focus {
+  outline: none;
+  border-color: #E8412A;
+}
+
+.file-input-textarea::placeholder {
+  color: #555;
+}
+
+.file-input-actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.upload-btn,
+.clear-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.upload-btn {
+  background: #E8412A;
+  color: white;
+}
+
+.upload-btn:hover {
+  background: #c9361f;
+}
+
+.clear-btn {
+  background: #333;
+  color: #ccc;
+}
+
+.clear-btn:hover {
+  background: #444;
+}
+
+.file-input-hint {
+  margin-top: 0.25rem;
+  font-size: 0.65rem;
+  color: #555;
+  text-align: center;
+}

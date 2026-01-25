@@ -1,0 +1,212 @@
+.export-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.export-modal {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 360px;
+  overflow: hidden;
+}
+
+.export-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #333;
+}
+
+.export-modal-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.export-modal-header .close-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.export-modal-header .close-btn:hover {
+  color: #fff;
+}
+
+.export-modal-content {
+  padding: 1.25rem;
+}
+
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.export-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #ccc;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.export-option-btn:hover {
+  border-color: #E8412A;
+  background: #2a2a2a;
+}
+
+.export-option-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.option-icon {
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #333;
+  border-radius: 8px;
+}
+
+.option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.option-text strong {
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.option-text small {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.append-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.append-mode p {
+  margin: 0;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.select-file-btn {
+  padding: 0.75rem 1.5rem;
+  background: #333;
+  border: 1px dashed #555;
+  border-radius: 8px;
+  color: #ccc;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.select-file-btn:hover {
+  border-color: #E8412A;
+  background: #3a3a3a;
+}
+
+.selected-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 8px;
+}
+
+.file-name {
+  font-size: 0.9rem;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.change-file-btn {
+  padding: 0.4rem 0.75rem;
+  background: #333;
+  border: none;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.change-file-btn:hover {
+  background: #444;
+}
+
+.append-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.back-btn {
+  flex: 1;
+  padding: 0.75rem;
+  background: #333;
+  border: none;
+  border-radius: 8px;
+  color: #ccc;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  background: #444;
+}
+
+.append-export-btn {
+  flex: 2;
+  padding: 0.75rem;
+  background: #E8412A;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.append-export-btn:hover:not(:disabled) {
+  background: #c9361f;
+}
+
+.append-export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
