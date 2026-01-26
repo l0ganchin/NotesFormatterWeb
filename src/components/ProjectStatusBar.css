@@ -1,0 +1,153 @@
+.project-status-bar {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.project-status-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.project-status-info:hover {
+  background: #222;
+}
+
+.project-status-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #333;
+  border-radius: 6px;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.project-status-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.project-status-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.project-status-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #ddd;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-status-arrow {
+  color: #666;
+  flex-shrink: 0;
+}
+
+.master-doc-section {
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid #333;
+  background: #151515;
+}
+
+.master-doc-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.master-doc-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  color: #888;
+}
+
+.master-doc-info svg {
+  flex-shrink: 0;
+  color: #6a9;
+}
+
+.master-doc-name {
+  font-size: 0.75rem;
+  color: #aaa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.master-doc-change-btn {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #888;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.master-doc-change-btn:hover {
+  color: #ddd;
+  border-color: #555;
+}
+
+.master-doc-clear-btn {
+  padding: 0.2rem 0.4rem;
+  background: transparent;
+  border: none;
+  color: #666;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.master-doc-clear-btn:hover {
+  color: #ff6b6b;
+}
+
+.set-master-doc-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  background: transparent;
+  border: 1px dashed #444;
+  border-radius: 4px;
+  color: #888;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+.set-master-doc-btn:hover {
+  color: #ddd;
+  border-color: #666;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.set-master-doc-btn svg {
+  flex-shrink: 0;
+}

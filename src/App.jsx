@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { AuthProvider } from './contexts/AuthContext'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import FileInput from './components/FileInput'
 import ApiKeyInput from './components/ApiKeyInput'
 import RespondentInput from './components/RespondentInput'
@@ -8,9 +8,11 @@ import QuantSettings from './components/QuantSettings'
 import OutputDisplay from './components/OutputDisplay'
 import ExportModal from './components/ExportModal'
 import UserMenu from './components/UserMenu'
-import PresetManager from './components/PresetManager'
+import ProjectSelector from './components/ProjectSelector'
+import ProjectStatusBar from './components/ProjectStatusBar'
 import { formatNotes, getDefaultTakeawaysGuidance, parseQuantCategories, parseRespondentInfo } from './services/claude'
 import { exportToWord, exportToPdf } from './services/export'
+import { savePreset } from './services/firebase'
 import logo from './assets/logo.png'
 import './App.css'
 
@@ -18,6 +20,8 @@ const API_KEY_STORAGE_KEY = 'notes-formatter-api-key'
 const PANEL_WIDTH_STORAGE_KEY = 'notes-formatter-panel-width'
 
 function AppContent() {
+  const { user, isAuthenticated } = useAuth()
+
   const [transcript, setTranscript] = useState('')
   const [notes, setNotes] = useState('')
   const [apiKey, setApiKey] = useState('')
@@ -30,17 +34,19 @@ function AppContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Master document for appending
+  // Project state
+  const [currentProject, setCurrentProject] = useState(null)
   const [masterDocFile, setMasterDocFile] = useState(null)
+  const [projectSelectorOpen, setProjectSelectorOpen] = useState(false)
 
   // Export modal state
   const [exportModalOpen, setExportModalOpen] = useState(false)
-  const [exportType, setExportType] = useState(null) // 'word' or 'pdf'
+  const [exportType, setExportType] = useState(null)
 
   // Resizable panel state
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
     const saved = localStorage.getItem(PANEL_WIDTH_STORAGE_KEY)
-    return saved ? parseInt(saved, 10) : 50 // percentage
+    return saved ? parseInt(saved, 10) : 50
   })
   const [isResizing, setIsResizing] = useState(false)
   const mainRef = useRef(null)
@@ -52,6 +58,20 @@ function AppContent() {
       setApiKey(savedKey)
     }
   }, [])
+
+  // Load project settings when project changes
+  useEffect(() => {
+    if (currentProject) {
+      if (currentProject.takeawaysGuidance !== undefined) {
+        setTakeawaysGuidance(currentProject.takeawaysGuidance || getDefaultTakeawaysGuidance())
+      }
+      if (currentProject.quantCategories !== undefined) {
+        setQuantCategories(currentProject.quantCategories || [])
+      }
+      // Note: masterDocFile needs to be re-uploaded since we can't store file objects
+      // But we show the name from the project if available
+    }
+  }, [currentProject])
 
   // Handle resize drag
   const handleMouseDown = useCallback((e) => {
@@ -66,7 +86,6 @@ function AppContent() {
     const containerRect = container.getBoundingClientRect()
     const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100
 
-    // Clamp between 30% and 70%
     const clampedWidth = Math.min(70, Math.max(30, newWidth))
     setLeftPanelWidth(clampedWidth)
   }, [isResizing])
@@ -94,7 +113,6 @@ function AppContent() {
     }
   }, [isResizing, handleMouseMove, handleMouseUp])
 
-  // Save API key to localStorage when it changes
   const handleApiKeyChange = (key) => {
     setApiKey(key)
     if (key) {
@@ -130,7 +148,6 @@ function AppContent() {
       })
       setOutput(result)
 
-      // Auto-fill respondent info from output if not manually edited
       if (!respondentManuallyEdited) {
         const detectedInfo = parseRespondentInfo(result)
         if (detectedInfo.name || detectedInfo.role || detectedInfo.company) {
@@ -138,7 +155,6 @@ function AppContent() {
         }
       }
 
-      // Auto-fill quant categories from output if in auto-detect mode
       if (quantCategories.length === 0) {
         const detectedCategories = parseQuantCategories(result)
         if (detectedCategories.length > 0) {
@@ -156,7 +172,6 @@ function AppContent() {
 
   const handleRespondentChange = (newInfo) => {
     setRespondentInfo(newInfo)
-    // Mark as manually edited if user types anything
     if (newInfo.name || newInfo.role || newInfo.company) {
       setRespondentManuallyEdited(true)
     }
@@ -179,25 +194,89 @@ function AppContent() {
     setExportModalOpen(true)
   }
 
-  const handleExport = async ({ mode, existingFile }) => {
-    // Use master doc if available and in append mode
-    const fileToUse = mode === 'append' && masterDocFile ? masterDocFile : existingFile
+  const handleExport = async ({ mode, existingFile, setAsMasterDoc }) => {
+    let fileToUse = existingFile
 
     if (exportType === 'word') {
-      await exportToWord(output, { mode, existingFile: fileToUse })
+      const result = await exportToWord(output, { mode, existingFile: fileToUse })
+
+      // If user chose to set as master doc and we're in a project
+      if (setAsMasterDoc && currentProject && user && result) {
+        // Update project with master doc info
+        const updatedProject = {
+          ...currentProject,
+          masterDocName: result.filename || 'formatted-notes.docx'
+        }
+        await savePreset(user.uid, updatedProject)
+        setCurrentProject(updatedProject)
+      }
     } else {
-      await exportToPdf(output, { mode, existingFile: fileToUse })
+      const result = await exportToPdf(output, { mode, existingFile: fileToUse })
+
+      if (setAsMasterDoc && currentProject && user && result) {
+        const updatedProject = {
+          ...currentProject,
+          masterDocName: result.filename || 'formatted-notes.pdf'
+        }
+        await savePreset(user.uid, updatedProject)
+        setCurrentProject(updatedProject)
+      }
     }
   }
 
-  const handleLoadPreset = (preset) => {
-    if (preset.takeawaysGuidance !== undefined) {
-      setTakeawaysGuidance(preset.takeawaysGuidance)
-    }
-    if (preset.quantCategories !== undefined) {
-      setQuantCategories(preset.quantCategories)
+  const handleSelectProject = (project) => {
+    setCurrentProject(project)
+    setMasterDocFile(null) // Reset file since we can't persist File objects
+  }
+
+  const handleOneOffMode = () => {
+    setCurrentProject(null)
+    setMasterDocFile(null)
+  }
+
+  const handleMasterDocChange = async (file) => {
+    setMasterDocFile(file)
+
+    // If in a project, save the master doc name
+    if (currentProject && user && file) {
+      const updatedProject = {
+        ...currentProject,
+        masterDocName: file.name
+      }
+      await savePreset(user.uid, updatedProject)
+      setCurrentProject(updatedProject)
     }
   }
+
+  const handleClearMasterDoc = async () => {
+    setMasterDocFile(null)
+
+    if (currentProject && user) {
+      const updatedProject = {
+        ...currentProject,
+        masterDocName: null
+      }
+      await savePreset(user.uid, updatedProject)
+      setCurrentProject(updatedProject)
+    }
+  }
+
+  // Save project settings when they change (debounced)
+  useEffect(() => {
+    if (!currentProject || !user) return
+
+    const timeoutId = setTimeout(async () => {
+      const updatedProject = {
+        ...currentProject,
+        takeawaysGuidance,
+        quantCategories
+      }
+      await savePreset(user.uid, updatedProject)
+      setCurrentProject(updatedProject)
+    }, 1000)
+
+    return () => clearTimeout(timeoutId)
+  }, [takeawaysGuidance, quantCategories])
 
   return (
     <div className="app">
@@ -206,19 +285,20 @@ function AppContent() {
           <img src={logo} alt="Company logo" className="header-logo" />
           <h1>Notes Formatter</h1>
         </div>
-        <UserMenu />
+        <UserMenu onOpenProjects={() => setProjectSelectorOpen(true)} />
       </header>
 
       <main className={`app-main ${isResizing ? 'resizing' : ''}`} ref={mainRef}>
         <section className="input-panel" style={{ width: `${leftPanelWidth}%` }}>
           <ApiKeyInput apiKey={apiKey} onChange={handleApiKeyChange} />
 
-          <PresetManager
-            takeawaysGuidance={takeawaysGuidance}
-            quantCategories={quantCategories}
+          <ProjectStatusBar
+            currentProject={currentProject}
             masterDocFile={masterDocFile}
-            onLoadPreset={handleLoadPreset}
-            onMasterDocChange={setMasterDocFile}
+            onOpenProjects={() => setProjectSelectorOpen(true)}
+            onMasterDocChange={handleMasterDocChange}
+            onClearMasterDoc={handleClearMasterDoc}
+            isAuthenticated={isAuthenticated}
           />
 
           <RespondentInput
@@ -285,6 +365,15 @@ function AppContent() {
         onExport={handleExport}
         exportType={exportType}
         masterDocFile={masterDocFile}
+        currentProject={currentProject}
+      />
+
+      <ProjectSelector
+        isOpen={projectSelectorOpen}
+        onClose={() => setProjectSelectorOpen(false)}
+        currentProject={currentProject}
+        onSelectProject={handleSelectProject}
+        onOneOffMode={handleOneOffMode}
       />
     </div>
   )

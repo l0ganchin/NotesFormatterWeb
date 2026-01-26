@@ -1,10 +1,18 @@
 import { useState, useRef } from 'react'
 import './ExportModal.css'
 
-export default function ExportModal({ isOpen, onClose, onExport, exportType, masterDocFile }) {
+export default function ExportModal({
+  isOpen,
+  onClose,
+  onExport,
+  exportType,
+  masterDocFile,
+  currentProject
+}) {
   const [mode, setMode] = useState(null) // 'new' or 'append'
   const [existingFile, setExistingFile] = useState(null)
   const [useMasterDoc, setUseMasterDoc] = useState(true)
+  const [setAsMasterDoc, setSetAsMasterDoc] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const fileInputRef = useRef(null)
 
@@ -17,10 +25,14 @@ export default function ExportModal({ isOpen, onClose, onExport, exportType, mas
   if (!isOpen) return null
 
   const handleNewDocument = async () => {
+    setMode('new')
+  }
+
+  const handleConfirmNew = async () => {
     setIsExporting(true)
     try {
-      await onExport({ mode: 'new' })
-      onClose()
+      await onExport({ mode: 'new', setAsMasterDoc: currentProject && setAsMasterDoc })
+      handleClose()
     } catch (err) {
       alert('Export failed: ' + err.message)
     } finally {
@@ -45,7 +57,7 @@ export default function ExportModal({ isOpen, onClose, onExport, exportType, mas
     setIsExporting(true)
     try {
       await onExport({ mode: 'append', existingFile: fileToUse })
-      onClose()
+      handleClose()
     } catch (err) {
       alert('Export failed: ' + err.message)
     } finally {
@@ -56,6 +68,8 @@ export default function ExportModal({ isOpen, onClose, onExport, exportType, mas
   const handleClose = () => {
     setMode(null)
     setExistingFile(null)
+    setSetAsMasterDoc(false)
+    setUseMasterDoc(true)
     onClose()
   }
 
@@ -96,6 +110,47 @@ export default function ExportModal({ isOpen, onClose, onExport, exportType, mas
                   <small>Add to an existing {fileExtension} file</small>
                 </span>
               </button>
+            </div>
+          )}
+
+          {mode === 'new' && (
+            <div className="new-mode">
+              <p>This will create a new {fileExtension} file with your formatted notes.</p>
+
+              {currentProject && (
+                <div className="master-doc-option">
+                  <label className="master-doc-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={setAsMasterDoc}
+                      onChange={(e) => setSetAsMasterDoc(e.target.checked)}
+                    />
+                    <span>Set as master document for <strong>{currentProject.name}</strong></span>
+                  </label>
+                  <small className="master-doc-hint">
+                    Future notes in this project can be appended to this document
+                  </small>
+                </div>
+              )}
+
+              <div className="new-actions">
+                <button
+                  className="back-btn"
+                  onClick={() => {
+                    setMode(null)
+                    setSetAsMasterDoc(false)
+                  }}
+                >
+                  Back
+                </button>
+                <button
+                  className="export-btn"
+                  onClick={handleConfirmNew}
+                  disabled={isExporting}
+                >
+                  {isExporting ? 'Exporting...' : 'Export'}
+                </button>
+              </div>
             </div>
           )}
 
