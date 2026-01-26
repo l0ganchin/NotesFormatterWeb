@@ -15,6 +15,9 @@
   flex-shrink: 0;
   background: #0d0d0d;
   border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .header-title {

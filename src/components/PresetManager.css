@@ -1,0 +1,290 @@
+.preset-manager {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.preset-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.preset-section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ddd;
+}
+
+.preset-save-btn {
+  padding: 0.3rem 0.6rem;
+  background: #E8412A;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.preset-save-btn:hover {
+  background: #c9361f;
+}
+
+.preset-login-prompt {
+  color: #888;
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+/* Master Doc Section */
+.master-doc-section {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #333;
+}
+
+.master-doc-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 0.4rem;
+}
+
+.master-doc-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.master-doc-file-input {
+  display: none;
+}
+
+.master-doc-upload-btn {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  background: #252525;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #aaa;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.master-doc-upload-btn:hover {
+  background: #2a2a2a;
+  border-color: #555;
+}
+
+.master-doc-clear-btn {
+  padding: 0.3rem 0.5rem;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #888;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.master-doc-clear-btn:hover {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+/* Preset List */
+.preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.preset-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.6rem;
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.preset-item:hover {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.preset-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  overflow: hidden;
+}
+
+.preset-item-name {
+  font-size: 0.8rem;
+  color: #ddd;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preset-item-doc {
+  font-size: 0.7rem;
+  color: #888;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preset-delete-btn {
+  padding: 0.2rem 0.4rem;
+  background: transparent;
+  border: none;
+  color: #666;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.preset-delete-btn:hover {
+  color: #ff6b6b;
+}
+
+.preset-loading,
+.preset-empty {
+  color: #666;
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.preset-error {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 100, 100, 0.1);
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  border-radius: 4px;
+  color: #ff6b6b;
+  font-size: 0.75rem;
+}
+
+/* Save Dialog */
+.preset-dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 199;
+}
+
+.preset-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.25rem;
+  width: 320px;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.preset-dialog-header {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ddd;
+  margin-bottom: 1rem;
+}
+
+.preset-name-input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: #252525;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #ddd;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.preset-name-input:focus {
+  outline: none;
+  border-color: #E8412A;
+}
+
+.preset-dialog-info {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 1rem;
+}
+
+.preset-dialog-info ul {
+  margin: 0.4rem 0 0 1.2rem;
+  padding: 0;
+}
+
+.preset-dialog-info li {
+  margin: 0.2rem 0;
+}
+
+.preset-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.preset-dialog-cancel {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #aaa;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.preset-dialog-cancel:hover {
+  background: #252525;
+  border-color: #555;
+}
+
+.preset-dialog-save {
+  padding: 0.5rem 1rem;
+  background: #E8412A;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.preset-dialog-save:hover:not(:disabled) {
+  background: #c9361f;
+}
+
+.preset-dialog-save:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

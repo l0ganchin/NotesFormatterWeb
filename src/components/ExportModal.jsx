@@ -1,11 +1,18 @@
 import { useState, useRef } from 'react'
 import './ExportModal.css'
 
-export default function ExportModal({ isOpen, onClose, onExport, exportType }) {
+export default function ExportModal({ isOpen, onClose, onExport, exportType, masterDocFile }) {
   const [mode, setMode] = useState(null) // 'new' or 'append'
   const [existingFile, setExistingFile] = useState(null)
+  const [useMasterDoc, setUseMasterDoc] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const fileInputRef = useRef(null)
+
+  // Check if master doc matches the export type
+  const masterDocMatchesType = masterDocFile && (
+    (exportType === 'word' && masterDocFile.name.endsWith('.docx')) ||
+    (exportType === 'pdf' && masterDocFile.name.endsWith('.pdf'))
+  )
 
   if (!isOpen) return null
 
@@ -33,10 +40,11 @@ export default function ExportModal({ isOpen, onClose, onExport, exportType }) {
   }
 
   const handleAppendExport = async () => {
-    if (!existingFile) return
+    const fileToUse = (useMasterDoc && masterDocMatchesType) ? masterDocFile : existingFile
+    if (!fileToUse) return
     setIsExporting(true)
     try {
-      await onExport({ mode: 'append', existingFile })
+      await onExport({ mode: 'append', existingFile: fileToUse })
       onClose()
     } catch (err) {
       alert('Export failed: ' + err.message)
@@ -93,33 +101,50 @@ export default function ExportModal({ isOpen, onClose, onExport, exportType }) {
 
           {mode === 'append' && (
             <div className="append-mode">
-              <p>Select the {fileExtension} file to append to:</p>
-
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept={fileAccept}
-                onChange={handleFileSelect}
-                style={{ display: 'none' }}
-              />
-
-              {!existingFile ? (
-                <button
-                  className="select-file-btn"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Choose File
-                </button>
-              ) : (
-                <div className="selected-file">
-                  <span className="file-name">{existingFile.name}</span>
-                  <button
-                    className="change-file-btn"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Change
-                  </button>
+              {masterDocMatchesType && (
+                <div className="master-doc-option">
+                  <label className="master-doc-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={useMasterDoc}
+                      onChange={(e) => setUseMasterDoc(e.target.checked)}
+                    />
+                    <span>Use master document: <strong>{masterDocFile.name}</strong></span>
+                  </label>
                 </div>
+              )}
+
+              {(!masterDocMatchesType || !useMasterDoc) && (
+                <>
+                  <p>Select the {fileExtension} file to append to:</p>
+
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept={fileAccept}
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+
+                  {!existingFile ? (
+                    <button
+                      className="select-file-btn"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Choose File
+                    </button>
+                  ) : (
+                    <div className="selected-file">
+                      <span className="file-name">{existingFile.name}</span>
+                      <button
+                        className="change-file-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        Change
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="append-actions">
@@ -128,6 +153,7 @@ export default function ExportModal({ isOpen, onClose, onExport, exportType }) {
                   onClick={() => {
                     setMode(null)
                     setExistingFile(null)
+                    setUseMasterDoc(true)
                   }}
                 >
                   Back
@@ -135,7 +161,7 @@ export default function ExportModal({ isOpen, onClose, onExport, exportType }) {
                 <button
                   className="append-export-btn"
                   onClick={handleAppendExport}
-                  disabled={!existingFile || isExporting}
+                  disabled={(!existingFile && !useMasterDoc) || (!masterDocMatchesType && !existingFile) || isExporting}
                 >
                   {isExporting ? 'Exporting...' : 'Export'}
                 </button>

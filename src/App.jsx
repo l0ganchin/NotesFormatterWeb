@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { AuthProvider } from './contexts/AuthContext'
 import FileInput from './components/FileInput'
 import ApiKeyInput from './components/ApiKeyInput'
 import RespondentInput from './components/RespondentInput'
@@ -6,6 +7,8 @@ import PromptSettings from './components/PromptSettings'
 import QuantSettings from './components/QuantSettings'
 import OutputDisplay from './components/OutputDisplay'
 import ExportModal from './components/ExportModal'
+import UserMenu from './components/UserMenu'
+import PresetManager from './components/PresetManager'
 import { formatNotes, getDefaultTakeawaysGuidance, parseQuantCategories, parseRespondentInfo } from './services/claude'
 import { exportToWord, exportToPdf } from './services/export'
 import logo from './assets/logo.png'
@@ -14,7 +17,7 @@ import './App.css'
 const API_KEY_STORAGE_KEY = 'notes-formatter-api-key'
 const PANEL_WIDTH_STORAGE_KEY = 'notes-formatter-panel-width'
 
-function App() {
+function AppContent() {
   const [transcript, setTranscript] = useState('')
   const [notes, setNotes] = useState('')
   const [apiKey, setApiKey] = useState('')
@@ -26,6 +29,9 @@ function App() {
   const [output, setOutput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Master document for appending
+  const [masterDocFile, setMasterDocFile] = useState(null)
 
   // Export modal state
   const [exportModalOpen, setExportModalOpen] = useState(false)
@@ -174,10 +180,22 @@ function App() {
   }
 
   const handleExport = async ({ mode, existingFile }) => {
+    // Use master doc if available and in append mode
+    const fileToUse = mode === 'append' && masterDocFile ? masterDocFile : existingFile
+
     if (exportType === 'word') {
-      await exportToWord(output, { mode, existingFile })
+      await exportToWord(output, { mode, existingFile: fileToUse })
     } else {
-      await exportToPdf(output, { mode, existingFile })
+      await exportToPdf(output, { mode, existingFile: fileToUse })
+    }
+  }
+
+  const handleLoadPreset = (preset) => {
+    if (preset.takeawaysGuidance !== undefined) {
+      setTakeawaysGuidance(preset.takeawaysGuidance)
+    }
+    if (preset.quantCategories !== undefined) {
+      setQuantCategories(preset.quantCategories)
     }
   }
 
@@ -188,11 +206,20 @@ function App() {
           <img src={logo} alt="Company logo" className="header-logo" />
           <h1>Notes Formatter</h1>
         </div>
+        <UserMenu />
       </header>
 
       <main className={`app-main ${isResizing ? 'resizing' : ''}`} ref={mainRef}>
         <section className="input-panel" style={{ width: `${leftPanelWidth}%` }}>
           <ApiKeyInput apiKey={apiKey} onChange={handleApiKeyChange} />
+
+          <PresetManager
+            takeawaysGuidance={takeawaysGuidance}
+            quantCategories={quantCategories}
+            masterDocFile={masterDocFile}
+            onLoadPreset={handleLoadPreset}
+            onMasterDocChange={setMasterDocFile}
+          />
 
           <RespondentInput
             value={respondentInfo}
@@ -257,8 +284,17 @@ function App() {
         onClose={() => setExportModalOpen(false)}
         onExport={handleExport}
         exportType={exportType}
+        masterDocFile={masterDocFile}
       />
     </div>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 
