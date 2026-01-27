@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import './ProjectStatusBar.css'
 
 function ProjectStatusBar({
@@ -6,9 +7,9 @@ function ProjectStatusBar({
   masterDocFile,
   onOpenProjects,
   onMasterDocChange,
-  onClearMasterDoc,
-  isAuthenticated
+  onClearMasterDoc
 }) {
+  const { isAuthenticated } = useAuth()
   const fileInputRef = useRef(null)
 
   const handleFileSelect = (e) => {
@@ -18,8 +19,22 @@ function ProjectStatusBar({
     }
   }
 
+  // Always show the component, but with different content based on auth state
   if (!isAuthenticated) {
-    return null
+    return (
+      <div className="project-status-bar not-authenticated">
+        <div className="project-status-info" onClick={onOpenProjects}>
+          <div className="project-status-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
+            </svg>
+          </div>
+          <div className="project-status-text">
+            <span className="project-status-name">Sign in to manage projects</span>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

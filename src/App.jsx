@@ -20,7 +20,7 @@ const API_KEY_STORAGE_KEY = 'notes-formatter-api-key'
 const PANEL_WIDTH_STORAGE_KEY = 'notes-formatter-panel-width'
 
 function AppContent() {
-  const { user, isAuthenticated } = useAuth()
+  const { user } = useAuth()
 
   const [transcript, setTranscript] = useState('')
   const [notes, setNotes] = useState('')
@@ -298,7 +298,6 @@ function AppContent() {
             onOpenProjects={() => setProjectSelectorOpen(true)}
             onMasterDocChange={handleMasterDocChange}
             onClearMasterDoc={handleClearMasterDoc}
-            isAuthenticated={isAuthenticated}
           />
 
           <RespondentInput

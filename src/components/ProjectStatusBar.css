@@ -151,3 +151,17 @@
 .set-master-doc-btn svg {
   flex-shrink: 0;
 }
+
+/* Not authenticated state */
+.project-status-bar.not-authenticated {
+  opacity: 0.7;
+}
+
+.project-status-bar.not-authenticated .project-status-info:hover {
+  background: #1f1f1f;
+}
+
+.project-status-bar.not-authenticated .project-status-name {
+  color: #999;
+  font-style: italic;
+}
