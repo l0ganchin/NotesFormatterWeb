@@ -11,7 +11,7 @@ import UserMenu from './components/UserMenu'
 import ProjectSelector from './components/ProjectSelector'
 import ProjectStatusBar from './components/ProjectStatusBar'
 import { formatNotes, getDefaultTakeawaysGuidance, parseQuantCategories, parseRespondentInfo } from './services/claude'
-import { exportToWord } from './services/export'
+import { exportToWord, DEFAULT_CONFIG } from './services/export'
 import { savePreset } from './services/firebase'
 import logo from './assets/logo.png'
 import './App.css'
@@ -30,6 +30,12 @@ function AppContent() {
   const [takeawaysGuidance, setTakeawaysGuidance] = useState(getDefaultTakeawaysGuidance())
   const [detailLevel, setDetailLevel] = useState('balanced')
   const [quantCategories, setQuantCategories] = useState([])
+  const [coverageLevel, setCoverageLevel] = useState('thorough')
+  const [takeawayBullet, setTakeawayBullet] = useState('\u27A4')
+  const [discussionBullet, setDiscussionBullet] = useState('\u2022')
+  const [formality, setFormality] = useState('standard')
+  const [discussionQuestionFormat, setDiscussionQuestionFormat] = useState('questions')
+  const [customStyleInstructions, setCustomStyleInstructions] = useState('')
   const [output, setOutput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -63,6 +69,12 @@ function AppContent() {
       // Use nullish coalescing to preserve empty string (autodetect mode)
       setTakeawaysGuidance(currentProject.takeawaysGuidance ?? '')
       setQuantCategories(currentProject.quantCategories ?? [])
+      setCoverageLevel(currentProject.coverageLevel ?? 'thorough')
+      setTakeawayBullet(currentProject.takeawayBullet ?? '\u27A4')
+      setDiscussionBullet(currentProject.discussionBullet ?? '\u2022')
+      setFormality(currentProject.formality ?? 'standard')
+      setDiscussionQuestionFormat(currentProject.discussionQuestionFormat ?? 'questions')
+      setCustomStyleInstructions(currentProject.customStyleInstructions ?? '')
     }
   }, [currentProject])
 
@@ -135,6 +147,12 @@ function AppContent() {
         quantCategories,
         detailLevel,
         respondentInfo: respondentManuallyEdited ? respondentInfo : null,
+        coverageLevel,
+        takeawayBullet,
+        discussionBullet,
+        formality,
+        discussionQuestionFormat,
+        customStyleInstructions,
         onChunk: (partialOutput) => {
           setOutput(partialOutput)
         },
@@ -181,7 +199,23 @@ function AppContent() {
   }
 
   const handleExport = async ({ mode, existingFile }) => {
-    await exportToWord(output, { mode, existingFile })
+    // Build custom config with user-selected bullet characters
+    const customConfig = {
+      ...DEFAULT_CONFIG,
+      takeaway_bullet: {
+        ...DEFAULT_CONFIG.takeaway_bullet,
+        bullet: takeawayBullet,
+      },
+      discussion_bullet: {
+        ...DEFAULT_CONFIG.discussion_bullet,
+        bullet: discussionBullet,
+      },
+      quant_bullet: {
+        ...DEFAULT_CONFIG.quant_bullet,
+        bullet: discussionBullet, // Use discussion bullet for quant
+      },
+    }
+    await exportToWord(output, { mode, existingFile, config: customConfig })
   }
 
   const handleSelectProject = (project) => {
@@ -200,14 +234,20 @@ function AppContent() {
       const updatedProject = {
         ...currentProject,
         takeawaysGuidance,
-        quantCategories
+        quantCategories,
+        coverageLevel,
+        takeawayBullet,
+        discussionBullet,
+        formality,
+        discussionQuestionFormat,
+        customStyleInstructions,
       }
       await savePreset(user.uid, updatedProject)
       setCurrentProject(updatedProject)
     }, 1000)
 
     return () => clearTimeout(timeoutId)
-  }, [takeawaysGuidance, quantCategories])
+  }, [takeawaysGuidance, quantCategories, coverageLevel, takeawayBullet, discussionBullet, formality, discussionQuestionFormat, customStyleInstructions, currentProject, user])
 
   return (
     <div className="app">
@@ -257,6 +297,18 @@ function AppContent() {
             onTakeawaysChange={setTakeawaysGuidance}
             detailLevel={detailLevel}
             onDetailLevelChange={setDetailLevel}
+            coverageLevel={coverageLevel}
+            onCoverageLevelChange={setCoverageLevel}
+            takeawayBullet={takeawayBullet}
+            onTakeawayBulletChange={setTakeawayBullet}
+            discussionBullet={discussionBullet}
+            onDiscussionBulletChange={setDiscussionBullet}
+            formality={formality}
+            onFormalityChange={setFormality}
+            discussionQuestionFormat={discussionQuestionFormat}
+            onDiscussionQuestionFormatChange={setDiscussionQuestionFormat}
+            customStyleInstructions={customStyleInstructions}
+            onCustomStyleInstructionsChange={setCustomStyleInstructions}
           />
 
           <QuantSettings

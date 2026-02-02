@@ -110,10 +110,43 @@ Auto-detect the interviewee's name, role/title, and company from the notes and t
 Use this for the title line: ### [Name], [Role], [Company]`
 }
 
-function buildPrompt(takeawaysGuidance = '', quantCategories = [], detailLevel = 'balanced', respondentInfo = null) {
+// Coverage level descriptions for overall output exhaustiveness
+const COVERAGE_LEVEL_INSTRUCTIONS = {
+  focused: `- Include only core insights and critical information
+- Omit minor details, tangents, and redundant points
+- Each discussion topic should be concise and to the point`,
+  thorough: `- Include all important content with supporting context
+- Capture substantive details, examples, and key quotes
+- Balance completeness with readability`,
+  exhaustive: `- Capture all discussion points as thoroughly as possible
+- Include examples, clarifications, tangents, and context
+- Err on the side of including more rather than less
+- Near-verbatim coverage of all substantive content`,
+}
+
+function buildCoverageInstructions(coverageLevel = 'thorough') {
+  const instruction = COVERAGE_LEVEL_INSTRUCTIONS[coverageLevel] || COVERAGE_LEVEL_INSTRUCTIONS.thorough
+
+  return `**Coverage Level:**
+${instruction}`
+}
+
+function buildPrompt(
+  takeawaysGuidance = '',
+  quantCategories = [],
+  detailLevel = 'balanced',
+  respondentInfo = null,
+  formality = 'standard',
+  discussionQuestionFormat = 'questions',
+  customStyleInstructions = '',
+  takeawayBullet = '\u27A4',
+  discussionBullet = '\u2022',
+  coverageLevel = 'thorough'
+) {
   const quantInstructions = buildQuantInstructions(quantCategories)
   const takeawaysInstructions = buildTakeawaysInstructions(takeawaysGuidance, detailLevel)
   const respondentInstructions = buildRespondentInstructions(respondentInfo)
+  const coverageInstructions = buildCoverageInstructions(coverageLevel)
 
   return `You are a professional note formatter for management consulting client interviews. Transform the raw meeting notes and transcript into polished, client-ready documentation.
 
@@ -168,12 +201,15 @@ You MUST follow these exact formatting conventions:
 3. **Discussion questions**: Wrap in triple asterisks \`***Text***\`
    - Example: \`***What services are you using them for?***\`
 
-4. **All bullet points**: Start with \`- \` (hyphen + space)
-   - Example: \`- I have been working with the company for three years\`
+4. **All bullet points**:
+   - Key Takeaway bullets start with \`${takeawayBullet} \`
+   - Discussion and Quantitative bullets start with \`${discussionBullet} \`
+   - Example: \`${takeawayBullet} The client has been working with the vendor for three years\`
+   - Example: \`${discussionBullet} We have been using their services since 2021\`
 
 5. **CRITICAL - Post-quantitative questions**: Any questions asked AFTER the quantitative scoring section MUST be formatted as Discussion questions. Do NOT omit these.
    - Format the question with triple asterisks: \`***Any final thoughts or feedback?***\`
-   - Format answers as bullet points: \`- I think they've been a great partner overall\`
+   - Format answers as bullet points: \`${discussionBullet} I think they've been a great partner overall\`
    - Common examples: "Any final thoughts?", "Is there anything else?", "One last question...", "Before we wrap up..."
    - These appear AFTER the quant scores in the output
 
@@ -193,27 +229,59 @@ You MUST follow these exact formatting conventions:
 ${takeawaysInstructions}
 
 **Discussion Section:**
-- Question headers should be the interviewer's questions (infer from context if needed)
-- Answers in first person ("I", "We", "Our") from the interviewee's perspective
+${discussionQuestionFormat === 'questions'
+    ? '- Question headers should be the interviewer\'s questions (infer from context if needed)'
+    : '- Use statement headers that summarize the topic discussed (e.g., "Vendor performance evaluation" instead of "How would you rate vendor performance?")'
+  }
+${formality === 'formal'
+    ? '- Write answers in third person describing what the interviewee said (e.g., "The client stated that...", "They mentioned...")'
+    : '- Answers in first person ("I", "We", "Our") from the interviewee\'s perspective'
+  }
 - Complete, conversational sentences
 - Preserve specific details: company names, dollar figures, percentages, timeframes
 - Use brackets for contextual clarifications, e.g., "[TikTok & Snapchat]"
 
 ${quantInstructions}
 
-**General:**
+${customStyleInstructions ? `**Custom Style Guidance:**
+${customStyleInstructions}
+
+` : ''}**General:**
+${coverageInstructions}
 - Professional but conversational tone
 - Don't over-abbreviate—include all substantive points
 - If the interviewee mentions competitors, include them with context
 - Preserve any nuance about the relationship trajectory
-- Be exhaustive yet concise
 
 ${respondentInstructions}`
 }
 
 export async function formatNotes(transcript, notes, apiKey, options = {}) {
-  const { takeawaysGuidance, quantCategories = [], detailLevel = 'balanced', respondentInfo = null, onChunk } = options
-  const systemPrompt = buildPrompt(takeawaysGuidance, quantCategories, detailLevel, respondentInfo)
+  const {
+    takeawaysGuidance,
+    quantCategories = [],
+    detailLevel = 'balanced',
+    respondentInfo = null,
+    formality = 'standard',
+    discussionQuestionFormat = 'questions',
+    customStyleInstructions = '',
+    takeawayBullet = '\u27A4',
+    discussionBullet = '\u2022',
+    coverageLevel = 'thorough',
+    onChunk
+  } = options
+  const systemPrompt = buildPrompt(
+    takeawaysGuidance,
+    quantCategories,
+    detailLevel,
+    respondentInfo,
+    formality,
+    discussionQuestionFormat,
+    customStyleInstructions,
+    takeawayBullet,
+    discussionBullet,
+    coverageLevel
+  )
 
   const userMessage = `## RAW MEETING NOTES
 ${notes}

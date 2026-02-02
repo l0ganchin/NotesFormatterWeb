@@ -324,3 +324,118 @@
 .prompt-help li {
   margin: 0.2rem 0;
 }
+
+/* Bullet selector field */
+.bullet-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.bullet-field > label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.bullet-select {
+  padding: 0.4rem 0.6rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  width: fit-content;
+  min-width: 180px;
+}
+
+.bullet-select:hover {
+  border-color: #444;
+}
+
+.bullet-select:focus {
+  outline: none;
+  border-color: #E8412A;
+}
+
+/* Radio button fields */
+.radio-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.radio-field > label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.radio-group {
+  display: flex;
+  gap: 1rem;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #ccc;
+}
+
+.radio-option input[type="radio"] {
+  cursor: pointer;
+  accent-color: #E8412A;
+}
+
+.radio-option:hover span {
+  color: white;
+}
+
+/* Custom instructions field */
+.custom-instructions-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.custom-instructions-field > label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.field-helper-text {
+  font-size: 0.7rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Formality info dropdown */
+.formality-info {
+  min-width: 350px;
+}
+
+.formality-info-content p {
+  margin: 0.5rem 0;
+  font-size: 0.75rem;
+  color: #ccc;
+  line-height: 1.5;
+}
+
+.formality-info-content p:first-child {
+  margin-top: 0;
+}
+
+.formality-info-content p:last-child {
+  margin-bottom: 0;
+}
+
+.formality-info-content strong {
+  color: #E8412A;
+}
