@@ -1,23 +1,11 @@
-import { useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import './ProjectStatusBar.css'
 
 function ProjectStatusBar({
   currentProject,
-  masterDocFile,
-  onOpenProjects,
-  onMasterDocChange,
-  onClearMasterDoc
+  onOpenProjects
 }) {
   const { isAuthenticated } = useAuth()
-  const fileInputRef = useRef(null)
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      onMasterDocChange(file)
-    }
-  }
 
   // Always show the component, but with different content based on auth state
   if (!isAuthenticated) {
@@ -38,7 +26,7 @@ function ProjectStatusBar({
   }
 
   return (
-    <div className="project-status-bar">
+    <div className={`project-status-bar ${currentProject ? 'has-project' : ''}`}>
       <div className="project-status-info" onClick={onOpenProjects}>
         <div className="project-status-icon">
           {currentProject ? (
@@ -63,55 +51,6 @@ function ProjectStatusBar({
           <path d="M7 10l5 5 5-5z"/>
         </svg>
       </div>
-
-      {currentProject && (
-        <div className="master-doc-section">
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept=".docx,.pdf"
-            onChange={handleFileSelect}
-            style={{ display: 'none' }}
-          />
-
-          {masterDocFile || currentProject.masterDocName ? (
-            <div className="master-doc-status">
-              <div className="master-doc-info">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
-                </svg>
-                <span className="master-doc-name">
-                  {masterDocFile?.name || currentProject.masterDocName}
-                </span>
-              </div>
-              <button
-                className="master-doc-change-btn"
-                onClick={() => fileInputRef.current?.click()}
-                title="Change master document"
-              >
-                Change
-              </button>
-              <button
-                className="master-doc-clear-btn"
-                onClick={onClearMasterDoc}
-                title="Remove master document"
-              >
-                ×
-              </button>
-            </div>
-          ) : (
-            <button
-              className="set-master-doc-btn"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-              </svg>
-              Set Master Document
-            </button>
-          )}
-        </div>
-      )}
     </div>
   )
 }

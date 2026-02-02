@@ -49,8 +49,6 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
         name: newProjectName.trim(),
         takeawaysGuidance: '',
         quantCategories: [],
-        masterDocData: null,
-        masterDocName: null,
         createdAt: new Date().toISOString()
       }
 
@@ -177,10 +175,18 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
           ) : projects.length > 0 ? (
             <div className="project-list">
               {projects.map((project) => (
-                <button
+                <div
                   key={project.id}
                   className={`project-option ${currentProject?.id === project.id ? 'active' : ''}`}
                   onClick={() => handleSelectProject(project)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handleSelectProject(project)
+                    }
+                  }}
                 >
                   <div className="project-option-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -190,9 +196,7 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
                   <div className="project-option-text">
                     <strong>{project.name}</strong>
                     <span>
-                      {project.masterDocName
-                        ? `Master: ${project.masterDocName}`
-                        : 'No master document'}
+                      Created {new Date(project.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                   {currentProject?.id === project.id && (
@@ -207,12 +211,12 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
                       <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                     </svg>
                   </button>
-                </button>
+                </div>
               ))}
             </div>
           ) : (
             <div className="project-empty">
-              No projects yet. Create one to save your settings and master documents.
+              No projects yet. Create one to save your settings.
             </div>
           )}
 

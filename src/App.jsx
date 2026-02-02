@@ -11,7 +11,7 @@ import UserMenu from './components/UserMenu'
 import ProjectSelector from './components/ProjectSelector'
 import ProjectStatusBar from './components/ProjectStatusBar'
 import { formatNotes, getDefaultTakeawaysGuidance, parseQuantCategories, parseRespondentInfo } from './services/claude'
-import { exportToWord, exportToPdf } from './services/export'
+import { exportToWord } from './services/export'
 import { savePreset } from './services/firebase'
 import logo from './assets/logo.png'
 import './App.css'
@@ -36,12 +36,10 @@ function AppContent() {
 
   // Project state
   const [currentProject, setCurrentProject] = useState(null)
-  const [masterDocFile, setMasterDocFile] = useState(null)
   const [projectSelectorOpen, setProjectSelectorOpen] = useState(false)
 
   // Export modal state
   const [exportModalOpen, setExportModalOpen] = useState(false)
-  const [exportType, setExportType] = useState(null)
 
   // Resizable panel state
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
@@ -62,14 +60,9 @@ function AppContent() {
   // Load project settings when project changes
   useEffect(() => {
     if (currentProject) {
-      if (currentProject.takeawaysGuidance !== undefined) {
-        setTakeawaysGuidance(currentProject.takeawaysGuidance || getDefaultTakeawaysGuidance())
-      }
-      if (currentProject.quantCategories !== undefined) {
-        setQuantCategories(currentProject.quantCategories || [])
-      }
-      // Note: masterDocFile needs to be re-uploaded since we can't store file objects
-      // But we show the name from the project if available
+      // Use nullish coalescing to preserve empty string (autodetect mode)
+      setTakeawaysGuidance(currentProject.takeawaysGuidance ?? '')
+      setQuantCategories(currentProject.quantCategories ?? [])
     }
   }, [currentProject])
 
@@ -184,81 +177,19 @@ function AppContent() {
 
   const handleExportWordClick = () => {
     if (!output) return
-    setExportType('word')
     setExportModalOpen(true)
   }
 
-  const handleExportPdfClick = () => {
-    if (!output) return
-    setExportType('pdf')
-    setExportModalOpen(true)
-  }
-
-  const handleExport = async ({ mode, existingFile, setAsMasterDoc }) => {
-    let fileToUse = existingFile
-
-    if (exportType === 'word') {
-      const result = await exportToWord(output, { mode, existingFile: fileToUse })
-
-      // If user chose to set as master doc and we're in a project
-      if (setAsMasterDoc && currentProject && user && result) {
-        // Update project with master doc info
-        const updatedProject = {
-          ...currentProject,
-          masterDocName: result.filename || 'formatted-notes.docx'
-        }
-        await savePreset(user.uid, updatedProject)
-        setCurrentProject(updatedProject)
-      }
-    } else {
-      const result = await exportToPdf(output, { mode, existingFile: fileToUse })
-
-      if (setAsMasterDoc && currentProject && user && result) {
-        const updatedProject = {
-          ...currentProject,
-          masterDocName: result.filename || 'formatted-notes.pdf'
-        }
-        await savePreset(user.uid, updatedProject)
-        setCurrentProject(updatedProject)
-      }
-    }
+  const handleExport = async ({ mode, existingFile }) => {
+    await exportToWord(output, { mode, existingFile })
   }
 
   const handleSelectProject = (project) => {
     setCurrentProject(project)
-    setMasterDocFile(null) // Reset file since we can't persist File objects
   }
 
   const handleOneOffMode = () => {
     setCurrentProject(null)
-    setMasterDocFile(null)
-  }
-
-  const handleMasterDocChange = async (file) => {
-    setMasterDocFile(file)
-
-    // If in a project, save the master doc name
-    if (currentProject && user && file) {
-      const updatedProject = {
-        ...currentProject,
-        masterDocName: file.name
-      }
-      await savePreset(user.uid, updatedProject)
-      setCurrentProject(updatedProject)
-    }
-  }
-
-  const handleClearMasterDoc = async () => {
-    setMasterDocFile(null)
-
-    if (currentProject && user) {
-      const updatedProject = {
-        ...currentProject,
-        masterDocName: null
-      }
-      await savePreset(user.uid, updatedProject)
-      setCurrentProject(updatedProject)
-    }
   }
 
   // Save project settings when they change (debounced)
@@ -285,7 +216,10 @@ function AppContent() {
           <img src={logo} alt="Company logo" className="header-logo" />
           <h1>Notes Formatter</h1>
         </div>
-        <UserMenu onOpenProjects={() => setProjectSelectorOpen(true)} />
+        <UserMenu
+          onOpenProjects={() => setProjectSelectorOpen(true)}
+          currentProject={currentProject}
+        />
       </header>
 
       <main className={`app-main ${isResizing ? 'resizing' : ''}`} ref={mainRef}>
@@ -294,10 +228,7 @@ function AppContent() {
 
           <ProjectStatusBar
             currentProject={currentProject}
-            masterDocFile={masterDocFile}
             onOpenProjects={() => setProjectSelectorOpen(true)}
-            onMasterDocChange={handleMasterDocChange}
-            onClearMasterDoc={handleClearMasterDoc}
           />
 
           <RespondentInput
@@ -353,7 +284,6 @@ function AppContent() {
             content={output}
             isLoading={isLoading}
             onExportWord={handleExportWordClick}
-            onExportPdf={handleExportPdfClick}
           />
         </section>
       </main>
@@ -362,9 +292,6 @@ function AppContent() {
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
         onExport={handleExport}
-        exportType={exportType}
-        masterDocFile={masterDocFile}
-        currentProject={currentProject}
       />
 
       <ProjectSelector

@@ -65,8 +65,9 @@ function parseMarkdownToElements(markdown) {
       continue
     }
 
-    // Discussion question (bold + italic: ***)
-    if (currentSection === 'discussion' && (line.startsWith('***') || line.startsWith('**_'))) {
+    // Discussion question (bold + italic: ***) - check in ANY section
+    // Post-quant questions appear while still in 'quantitative' section
+    if (line.startsWith('***') || line.startsWith('**_') || line.startsWith('_**')) {
       const questionText = line.replace(/\*\*\*/g, '').replace(/\*\*/g, '').replace(/_/g, '').replace(/\*/g, '').trim()
       elements.push(
         <p key={key++} className="preview-question">

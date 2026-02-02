@@ -49,6 +49,38 @@
   opacity: 1;
 }
 
+/* Active Project Button */
+.active-project-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  background: #2563eb;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.active-project-btn:hover {
+  background: #1d4ed8;
+}
+
+.active-project-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.active-project-btn svg {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
 /* Official Google Sign-in Button Style */
 .google-sign-in-btn {
   display: flex;
@@ -205,12 +237,14 @@
 /* Responsive */
 @media (max-width: 600px) {
   .my-projects-btn span,
-  .google-sign-in-btn span {
+  .google-sign-in-btn span,
+  .active-project-btn span {
     display: none;
   }
 
   .my-projects-btn,
-  .google-sign-in-btn {
+  .google-sign-in-btn,
+  .active-project-btn {
     padding: 0.5rem;
   }
 }

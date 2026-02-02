@@ -57,8 +57,8 @@
   color: white;
 }
 
-.copy-btn,
-.export-btn {
+.output-actions .copy-btn,
+.output-actions .export-btn {
   padding: 0.3rem 0.6rem;
   background: #333;
   border: none;
@@ -69,17 +69,19 @@
   transition: background-color 0.2s;
 }
 
-.copy-btn:hover {
+.output-actions .copy-btn:hover,
+.output-actions .export-btn:hover {
   background: #444;
 }
 
-.export-btn {
-  background: #E8412A;
-  color: white;
-}
-
-.export-btn:hover {
-  background: #c9361f;
+.preview-disclaimer {
+  margin: 0;
+  padding: 0.35rem 1rem;
+  background: #151515;
+  border-bottom: 1px solid #333;
+  color: #666;
+  font-size: 0.7rem;
+  font-style: italic;
 }
 
 .output-content {

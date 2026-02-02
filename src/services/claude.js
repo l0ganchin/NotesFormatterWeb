@@ -34,6 +34,13 @@ ${lengthInstruction}
 }
 
 function buildQuantInstructions(quantCategories = []) {
+  // Post-quant reminder that applies to both modes
+  const postQuantReminder = `
+**REMINDER - Post-Quantitative Content:**
+After completing the quantitative scores, CHECK THE TRANSCRIPT for any remaining questions or discussion.
+Common patterns to look for: "Any final thoughts?", "Is there anything else?", "One more question...", "Before we wrap up..."
+These MUST be formatted as Discussion questions (triple asterisks for question, bullets for answers).`
+
   // Manual mode: user specified categories with per-category scales
   if (quantCategories.length > 0) {
     const validCategories = quantCategories.filter(cat => cat.name && cat.name.trim())
@@ -51,10 +58,7 @@ ${categoryList}
 - If a category was NOT mentioned or discussed in the transcript/notes, use:
    - **Score:** Not discussed
    - **Reason:** This topic was not covered in the interview
-- **IMPORTANT - Post-Quantitative Questions:** If there are ANY additional questions asked AFTER the quantitative scoring section (e.g., "Any final thoughts?", "Is there anything else?", follow-up questions), these MUST be formatted as Discussion questions:
-   - Use triple asterisks for the question: \`***Question text?***\`
-   - Use bullet points for the answers: \`- Answer text\`
-   - Place these AFTER the quantitative scores but still within the document flow`
+${postQuantReminder}`
     }
   }
 
@@ -65,10 +69,7 @@ ${categoryList}
 - Auto-detect the categories being rated and include each with:
    - **Score:** [value] (out of the scale mentioned, or 10 if not specified)
    - **Reason:** [explanation from interviewee]
-- **IMPORTANT - Post-Quantitative Questions:** If there are ANY additional questions asked AFTER the quantitative scoring section (e.g., "Any final thoughts?", "Is there anything else?", follow-up questions), these MUST be formatted as Discussion questions:
-   - Use triple asterisks for the question: \`***Question text?***\`
-   - Use bullet points for the answers: \`- Answer text\`
-   - Place these AFTER the quantitative scores but still within the document flow`
+${postQuantReminder}`
 }
 
 function buildTakeawaysInstructions(takeawaysGuidance = '', detailLevel = 'balanced') {
@@ -115,6 +116,12 @@ function buildPrompt(takeawaysGuidance = '', quantCategories = [], detailLevel =
   const respondentInstructions = buildRespondentInstructions(respondentInfo)
 
   return `You are a professional note formatter for management consulting client interviews. Transform the raw meeting notes and transcript into polished, client-ready documentation.
+
+## CRITICAL: PROCESS THE ENTIRE TRANSCRIPT
+**You MUST read and format the ENTIRE transcript from start to finish. Do NOT stop after quantitative scores.**
+- Interviews often have questions AFTER the quantitative scoring section (e.g., "Any final thoughts?", "Is there anything else?", "One more question...")
+- These post-quantitative questions MUST be included and formatted as Discussion questions
+- Scan the ENTIRE transcript before finishing to ensure nothing is missed
 
 ## INPUTS
 You will receive two attachments:
@@ -164,19 +171,21 @@ You MUST follow these exact formatting conventions:
 4. **All bullet points**: Start with \`- \` (hyphen + space)
    - Example: \`- I have been working with the company for three years\`
 
-5. **Quantitative section header**: Use triple asterisks
+5. **CRITICAL - Post-quantitative questions**: Any questions asked AFTER the quantitative scoring section MUST be formatted as Discussion questions. Do NOT omit these.
+   - Format the question with triple asterisks: \`***Any final thoughts or feedback?***\`
+   - Format answers as bullet points: \`- I think they've been a great partner overall\`
+   - Common examples: "Any final thoughts?", "Is there anything else?", "One last question...", "Before we wrap up..."
+   - These appear AFTER the quant scores in the output
+
+6. **Quantitative section header**: Use triple asterisks
    - Example: \`***Quantitative Questions: How would you rate [Company]?***\`
 
-6. **Quantitative category names**: Use double asterisks (bold)
+7. **Quantitative category names**: Use double asterisks (bold)
    - Example: \`**Overall Satisfaction**\`
 
-7. **Score and Reason labels**: Bold the labels within bullets
+8. **Score and Reason labels**: Bold the labels within bullets
    - Example: \`- **Score:** 7 (out of 10)\`
    - Example: \`- **Reason:** They delivered excellent work\`
-
-8. **Post-quantitative questions**: If there are additional questions asked after the quantitative section, format them the same as Discussion questions (triple asterisks for the question, bullet points for answers)
-   - Example: \`***Any final thoughts or feedback?***\`
-   - Example: \`- I think they've been a great partner overall\`
 
 ## STYLE GUIDELINES
 

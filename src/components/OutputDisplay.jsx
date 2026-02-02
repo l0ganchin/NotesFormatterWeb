@@ -12,7 +12,7 @@ const LOADING_MESSAGES = [
   'Almost there...',
 ]
 
-export default function OutputDisplay({ content, isLoading, onExportWord, onExportPdf }) {
+export default function OutputDisplay({ content, isLoading, onExportWord }) {
   const [viewMode, setViewMode] = useState('preview') // 'preview' or 'raw'
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [messageIndex, setMessageIndex] = useState(0)
@@ -130,16 +130,13 @@ export default function OutputDisplay({ content, isLoading, onExportWord, onExpo
             className="export-btn"
             onClick={onExportWord}
           >
-            Word
-          </button>
-          <button
-            className="export-btn"
-            onClick={onExportPdf}
-          >
-            PDF
+            Export .docx
           </button>
         </div>
       </div>
+      {viewMode === 'preview' && (
+        <p className="preview-disclaimer">This is a preview and may contain errors. Export for final formatting.</p>
+      )}
       <div className={`output-content ${viewMode === 'preview' ? 'preview-mode' : ''}`}>
         {viewMode === 'preview' ? (
           <FormattedPreview content={content} />

@@ -4,10 +4,8 @@ import {
   TextRun,
   PageBreak,
   convertInchesToTwip,
-  AlignmentType,
 } from 'docx'
 import { saveAs } from 'file-saver'
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import DocxMerger from 'docx-merger'
 
 // Default configuration matching the Python script
@@ -20,15 +18,6 @@ const DEFAULT_CONFIG = {
   quant_header: { font: 'Calibri', size: 11, bold: true, italic: true },
   quant_category: { font: 'Calibri', size: 11, bold: true },
   quant_bullet: { font: 'Calibri', size: 11, bullet: '\u2022', indent: 0.5 },
-}
-
-function hexToRgb(hex) {
-  const h = hex.replace('#', '')
-  return {
-    r: parseInt(h.substring(0, 2), 16),
-    g: parseInt(h.substring(2, 4), 16),
-    b: parseInt(h.substring(4, 6), 16),
-  }
 }
 
 // Remove trailing period from bullet point text
@@ -215,10 +204,13 @@ export function parseMarkdownToDocx(markdownText, config = DEFAULT_CONFIG, isApp
     }
 
     // Discussion question (bold + italic in markdown: ***)
-    if (currentSection === 'discussion' && (line.startsWith('***') || line.startsWith('**_') || line.startsWith('_**'))) {
+    // Check for *** pattern in any section (questions can appear after quant scores)
+    if (line.startsWith('***') || line.startsWith('**_') || line.startsWith('_**')) {
       const questionText = line.replace(/\*\*\*/g, '').replace(/\*\*/g, '').replace(/_/g, '').replace(/\*/g, '').trim()
       const questionStyle = config.discussion_question || DEFAULT_CONFIG.discussion_question
 
+      // If we encounter a discussion question while in quantitative section,
+      // this is a post-quant question - treat it as discussion
       paragraphs.push(
         new Paragraph({
           children: [createTextRun(questionText, questionStyle)],
@@ -386,182 +378,7 @@ export async function exportToWord(markdownText, options = {}) {
   const filename = `formatted_notes_${timestamp}.docx`
 
   saveAs(blob, filename)
-  return filename
+  return { filename }
 }
-
-export async function exportToPdf(markdownText, options = {}) {
-  const { mode = 'new', existingFile = null } = options
-
-  let pdfDoc
-  let appendFilename = null
-
-  if (mode === 'append' && existingFile) {
-    // Load existing PDF
-    const existingArrayBuffer = await existingFile.arrayBuffer()
-    pdfDoc = await PDFDocument.load(existingArrayBuffer)
-    appendFilename = existingFile.name.replace('.pdf', '')
-  } else {
-    pdfDoc = await PDFDocument.create()
-  }
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-  const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique)
-  const fontBoldItalic = await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique)
-
-  // Page dimensions (Letter size in points: 612 x 792)
-  const pageWidth = 612
-  const pageHeight = 792
-  const margin = 72 // 1 inch
-  const contentWidth = pageWidth - 2 * margin
-  const fontSize = 11
-  const lineHeight = fontSize * 1.4
-  const titleColor = rgb(15 / 255, 71 / 255, 97 / 255) // #0F4761
-
-  let page = pdfDoc.addPage([pageWidth, pageHeight])
-  let y = pageHeight - margin
-
-  const addNewPage = () => {
-    page = pdfDoc.addPage([pageWidth, pageHeight])
-    y = pageHeight - margin
-  }
-
-  const checkPageBreak = (neededHeight) => {
-    if (y - neededHeight < margin) {
-      addNewPage()
-    }
-  }
-
-  // Word wrap helper
-  const wrapText = (text, maxWidth, currentFont, currentSize) => {
-    const words = text.split(' ')
-    const lines = []
-    let currentLine = ''
-
-    for (const word of words) {
-      const testLine = currentLine ? `${currentLine} ${word}` : word
-      const testWidth = currentFont.widthOfTextAtSize(testLine, currentSize)
-
-      if (testWidth > maxWidth && currentLine) {
-        lines.push(currentLine)
-        currentLine = word
-      } else {
-        currentLine = testLine
-      }
-    }
-    if (currentLine) {
-      lines.push(currentLine)
-    }
-    return lines
-  }
-
-  const drawText = (text, options = {}) => {
-    const {
-      size = fontSize,
-      currentFont = font,
-      color = rgb(0, 0, 0),
-      indent = 0,
-      spacingBefore = 0,
-      spacingAfter = 4,
-    } = options
-
-    y -= spacingBefore
-    const wrappedLines = wrapText(text, contentWidth - indent, currentFont, size)
-    const totalHeight = wrappedLines.length * (size * 1.4) + spacingAfter
-    checkPageBreak(totalHeight)
-
-    for (const line of wrappedLines) {
-      page.drawText(line, {
-        x: margin + indent,
-        y: y - size,
-        size,
-        font: currentFont,
-        color,
-      })
-      y -= size * 1.4
-    }
-    y -= spacingAfter
-  }
-
-  // Parse and render markdown
-  const lines = markdownText.trim().split('\n')
-  let currentSection = null
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim()
-
-    if (!line || line === '---') continue
-
-    // Title
-    if (line.startsWith('### ')) {
-      const titleText = line.replace('### ', '').replace(/\*\*/g, '').trim()
-      drawText(titleText, { size: 14, currentFont: font, color: titleColor, spacingAfter: 8 })
-      continue
-    }
-
-    // Key Takeaways header
-    if (line.includes('Key Takeaways') && (line.includes('**') || line.includes(':'))) {
-      currentSection = 'takeaways'
-      drawText('Key Takeaways:', { currentFont: fontBold, spacingBefore: 16, spacingAfter: 8 })
-      continue
-    }
-
-    // Discussion header
-    if (line.includes('Discussion') && (line.includes('**') || line.includes(':'))) {
-      currentSection = 'discussion'
-      drawText('Discussion:', { currentFont: fontBold, spacingBefore: 16, spacingAfter: 8 })
-      continue
-    }
-
-    // Quantitative header
-    if (line.includes('Quantitative') && (line.includes('Question') || line.includes('Score') || line.toLowerCase().includes('rate'))) {
-      currentSection = 'quantitative'
-      const quantText = line.replace(/\*\*\*/g, '').replace(/\*\*/g, '').replace(/\*/g, '').trim()
-      drawText(quantText, { currentFont: fontBoldItalic, spacingBefore: 16, spacingAfter: 8 })
-      continue
-    }
-
-    // Discussion question
-    if ((currentSection === 'discussion' || currentSection === 'quantitative') && line.startsWith('***')) {
-      const questionText = line.replace(/\*\*\*/g, '').replace(/\*\*/g, '').replace(/\*/g, '').trim()
-      drawText(questionText, { currentFont: fontBoldItalic, spacingBefore: 12, spacingAfter: 6 })
-      continue
-    }
-
-    // Quantitative category
-    if (currentSection === 'quantitative' && line.startsWith('**') && line.endsWith('**') && !line.includes('Score')) {
-      const categoryText = line.replace(/\*\*/g, '').trim()
-      drawText(categoryText, { currentFont: fontBold, spacingBefore: 10, spacingAfter: 4 })
-      continue
-    }
-
-    // Bullet points
-    if (line.startsWith('- ') || line.startsWith('* ')) {
-      let bulletText = line.substring(2).trim().replace(/\*\*/g, '').replace(/\.\s*$/, '')
-      const bullet = currentSection === 'takeaways' ? '> ' : '- '
-      drawText(bullet + bulletText, { indent: 18, spacingAfter: currentSection === 'quantitative' ? 3 : 5 })
-      continue
-    }
-
-    // Fallback paragraph
-    const plainText = line.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#/g, '').trim()
-    if (plainText) {
-      drawText(plainText, { spacingBefore: 4, spacingAfter: 4 })
-    }
-  }
-
-  const pdfBytes = await pdfDoc.save()
-  const blob = new Blob([pdfBytes], { type: 'application/pdf' })
-
-  let filename
-  if (appendFilename) {
-    filename = `${appendFilename}_updated.pdf`
-  } else {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-    filename = `formatted_notes_${timestamp}.pdf`
-  }
-
-  saveAs(blob, filename)
-}
-
 
 export { DEFAULT_CONFIG }
