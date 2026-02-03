@@ -151,29 +151,23 @@ export default function FormatStyleSettings({
           {/* Discussion Section */}
           <h4 className="format-style-section-header">Discussion Format & Style</h4>
 
-          <div className="radio-field">
+          <div className="detail-level-field">
             <label>Discussion Questions</label>
-            <div className="radio-group">
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  name="discussionQuestionFormat"
-                  value="questions"
-                  checked={discussionQuestionFormat === 'questions'}
-                  onChange={(e) => onDiscussionQuestionFormatChange(e.target.value)}
-                />
-                <span>As questions</span>
-              </label>
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  name="discussionQuestionFormat"
-                  value="statements"
-                  checked={discussionQuestionFormat === 'statements'}
-                  onChange={(e) => onDiscussionQuestionFormatChange(e.target.value)}
-                />
-                <span>As statements</span>
-              </label>
+            <div className="detail-level-selector">
+              <button
+                type="button"
+                className={`detail-level-btn ${discussionQuestionFormat === 'questions' ? 'active' : ''}`}
+                onClick={() => onDiscussionQuestionFormatChange('questions')}
+              >
+                As questions
+              </button>
+              <button
+                type="button"
+                className={`detail-level-btn ${discussionQuestionFormat === 'statements' ? 'active' : ''}`}
+                onClick={() => onDiscussionQuestionFormatChange('statements')}
+              >
+                As statements
+              </button>
             </div>
           </div>
 
@@ -225,28 +219,22 @@ export default function FormatStyleSettings({
             )}
           </div>
 
-          <div className="radio-field">
-            <div className="radio-group">
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  name="formality"
-                  value="standard"
-                  checked={formality === 'standard'}
-                  onChange={(e) => onFormalityChange(e.target.value)}
-                />
-                <span>Standard</span>
-              </label>
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  name="formality"
-                  value="formal"
-                  checked={formality === 'formal'}
-                  onChange={(e) => onFormalityChange(e.target.value)}
-                />
-                <span>Formal</span>
-              </label>
+          <div className="detail-level-field">
+            <div className="detail-level-selector">
+              <button
+                type="button"
+                className={`detail-level-btn ${formality === 'standard' ? 'active' : ''}`}
+                onClick={() => onFormalityChange('standard')}
+              >
+                Standard
+              </button>
+              <button
+                type="button"
+                className={`detail-level-btn ${formality === 'formal' ? 'active' : ''}`}
+                onClick={() => onFormalityChange('formal')}
+              >
+                Formal
+              </button>
             </div>
           </div>
 
