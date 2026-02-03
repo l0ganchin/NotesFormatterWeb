@@ -5,11 +5,11 @@ import ApiKeyInput from './components/ApiKeyInput'
 import RespondentInput from './components/RespondentInput'
 import PromptSettings from './components/PromptSettings'
 import QuantSettings from './components/QuantSettings'
+import FormatStyleSettings from './components/FormatStyleSettings'
 import OutputDisplay from './components/OutputDisplay'
 import ExportModal from './components/ExportModal'
 import UserMenu from './components/UserMenu'
 import ProjectSelector from './components/ProjectSelector'
-import ProjectStatusBar from './components/ProjectStatusBar'
 import { formatNotes, getDefaultTakeawaysGuidance, parseQuantCategories, parseRespondentInfo } from './services/claude'
 import { exportToWord, DEFAULT_CONFIG } from './services/export'
 import { savePreset } from './services/firebase'
@@ -266,11 +266,6 @@ function AppContent() {
         <section className="input-panel" style={{ width: `${leftPanelWidth}%` }}>
           <ApiKeyInput apiKey={apiKey} onChange={handleApiKeyChange} />
 
-          <ProjectStatusBar
-            currentProject={currentProject}
-            onOpenProjects={() => setProjectSelectorOpen(true)}
-          />
-
           <RespondentInput
             value={respondentInfo}
             onChange={handleRespondentChange}
@@ -295,25 +290,28 @@ function AppContent() {
           <PromptSettings
             takeawaysGuidance={takeawaysGuidance}
             onTakeawaysChange={setTakeawaysGuidance}
-            detailLevel={detailLevel}
-            onDetailLevelChange={setDetailLevel}
-            coverageLevel={coverageLevel}
-            onCoverageLevelChange={setCoverageLevel}
-            takeawayBullet={takeawayBullet}
-            onTakeawayBulletChange={setTakeawayBullet}
-            discussionBullet={discussionBullet}
-            onDiscussionBulletChange={setDiscussionBullet}
-            formality={formality}
-            onFormalityChange={setFormality}
-            discussionQuestionFormat={discussionQuestionFormat}
-            onDiscussionQuestionFormatChange={setDiscussionQuestionFormat}
-            customStyleInstructions={customStyleInstructions}
-            onCustomStyleInstructionsChange={setCustomStyleInstructions}
           />
 
           <QuantSettings
             categories={quantCategories}
             onCategoriesChange={setQuantCategories}
+          />
+
+          <FormatStyleSettings
+            coverageLevel={coverageLevel}
+            onCoverageLevelChange={setCoverageLevel}
+            detailLevel={detailLevel}
+            onDetailLevelChange={setDetailLevel}
+            takeawayBullet={takeawayBullet}
+            onTakeawayBulletChange={setTakeawayBullet}
+            discussionBullet={discussionBullet}
+            onDiscussionBulletChange={setDiscussionBullet}
+            discussionQuestionFormat={discussionQuestionFormat}
+            onDiscussionQuestionFormatChange={setDiscussionQuestionFormat}
+            formality={formality}
+            onFormalityChange={setFormality}
+            customStyleInstructions={customStyleInstructions}
+            onCustomStyleInstructionsChange={setCustomStyleInstructions}
           />
 
           {error && <div className="error-message">{error}</div>}
