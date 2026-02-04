@@ -3,6 +3,7 @@ import {
   Paragraph,
   TextRun,
   PageBreak,
+  HeadingLevel,
   convertInchesToTwip,
 } from 'docx'
 import { saveAs } from 'file-saver'
@@ -137,6 +138,7 @@ export function parseMarkdownToDocx(markdownText, config = DEFAULT_CONFIG, isApp
 
       paragraphs.push(
         new Paragraph({
+          heading: HeadingLevel.HEADING_2,
           children: [createTextRun(titleText, titleStyle)],
           spacing: { before: 160, after: 80 },
         })
@@ -310,8 +312,14 @@ export function parseMarkdownToDocx(markdownText, config = DEFAULT_CONFIG, isApp
   return paragraphs
 }
 
+// Sanitize filename by replacing invalid characters with underscores
+function sanitizeFilename(str) {
+  if (!str || !str.trim()) return 'Unknown'
+  return str.trim().replace(/[/\\?%*:|"<>]/g, '_')
+}
+
 export async function exportToWord(markdownText, options = {}) {
-  const { mode = 'new', existingFile = null, config = DEFAULT_CONFIG } = options
+  const { mode = 'new', existingFile = null, config = DEFAULT_CONFIG, respondentInfo = {} } = options
 
   if (mode === 'append' && existingFile) {
     // Read existing file and merge
@@ -374,8 +382,13 @@ export async function exportToWord(markdownText, options = {}) {
   })
 
   const blob = await import('docx').then((docx) => docx.Packer.toBlob(doc))
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-  const filename = `formatted_notes_${timestamp}.docx`
+
+  // Generate filename: Name_Role_Company_Notes_YYYY-MM-DD.docx
+  const name = sanitizeFilename(respondentInfo.name)
+  const role = sanitizeFilename(respondentInfo.role)
+  const company = sanitizeFilename(respondentInfo.company)
+  const date = new Date().toISOString().slice(0, 10)
+  const filename = `${name}_${role}_${company}_Notes_${date}.docx`
 
   saveAs(blob, filename)
   return { filename }

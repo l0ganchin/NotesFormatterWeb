@@ -102,11 +102,13 @@ function buildRespondentInstructions(respondentInfo) {
 ${parts.join('\n')}
 
 You MUST use this exact information for the title line. Format as: ### [Name], [Role], [Company]
-If any field is missing, infer it from the content.`
+If any field is missing, infer role/company from context but use the name exactly as provided.`
   }
 
   return `**Respondent Information:**
-Auto-detect the interviewee's name, role/title, and company from the notes and transcript.
+Extract the interviewee's name, role/title, and company from the notes and transcript.
+- For the name: Use ONLY the exact name as stated - do NOT add or guess missing parts (e.g., if only "Bobby" is mentioned, use "Bobby" not "Bobby Rodriguez")
+- Role and company can be inferred from context if not explicitly stated
 Use this for the title line: ### [Name], [Role], [Company]`
 }
 
@@ -155,6 +157,13 @@ function buildPrompt(
 - Interviews often have questions AFTER the quantitative scoring section (e.g., "Any final thoughts?", "Is there anything else?", "One more question...")
 - These post-quantitative questions MUST be included and formatted as Discussion questions
 - Scan the ENTIRE transcript before finishing to ensure nothing is missed
+
+## CRITICAL: ACCURACY AND SOURCE FIDELITY
+**All content must be grounded in the meeting notes or transcript.**
+- For the interviewee's name: Use ONLY the exact name as stated. If only a first name is mentioned (e.g., "Bobby"), use only that - do NOT add or guess a last name
+- Company and competitor names may be inferred from context when unclear, using the meeting notes as the primary source of truth
+- All facts, figures, quotes, and details must be traceable to the source material
+- Do not embellish or add information not present in the inputs
 
 ## INPUTS
 You will receive two attachments:

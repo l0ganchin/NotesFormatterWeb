@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import './FormatStyleSettings.css'
 
 const COVERAGE_LEVELS = [
@@ -13,15 +13,13 @@ const DETAIL_LEVELS = [
   { value: 'detailed', label: 'Detailed' },
 ]
 
+// Bullet options matching Word's built-in Bullet Library
 const BULLET_OPTIONS = [
-  { label: '→ Right arrow', value: '\u27A4', display: '→' },
-  { label: '• Bullet', value: '\u2022', display: '•' },
-  { label: '‣ Triangle bullet', value: '\u2023', display: '‣' },
-  { label: '▸ Black triangle', value: '\u25B8', display: '▸' },
-  { label: '▹ White triangle', value: '\u25B9', display: '▹' },
-  { label: '▪ Black square', value: '\u25AA', display: '▪' },
-  { label: '◦ White bullet', value: '\u25E6', display: '◦' },
-  { label: '- Hyphen', value: '-', display: '-' },
+  { label: '● Filled circle', value: '\u25CF', display: '●' },
+  { label: '○ Empty circle', value: '\u25CB', display: '○' },
+  { label: '■ Filled square', value: '\u25A0', display: '■' },
+  { label: '➢ Arrow', value: '\u27A2', display: '➢' },
+  { label: '– Dash', value: '\u2013', display: '–' },
 ]
 
 export default function FormatStyleSettings({
@@ -37,41 +35,8 @@ export default function FormatStyleSettings({
   onDiscussionQuestionFormatChange,
   formality,
   onFormalityChange,
-  customStyleInstructions,
-  onCustomStyleInstructionsChange,
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
-  const [showFormalityInfo, setShowFormalityInfo] = useState(false)
-  const [formalityInfoPosition, setFormalityInfoPosition] = useState({ top: 0, left: 0 })
-  const formalityInfoRef = useRef(null)
-  const formalityButtonRef = useRef(null)
-
-  // Close formality info dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (
-        formalityInfoRef.current &&
-        !formalityInfoRef.current.contains(event.target) &&
-        formalityButtonRef.current &&
-        !formalityButtonRef.current.contains(event.target)
-      ) {
-        setShowFormalityInfo(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  const handleToggleFormalityInfo = () => {
-    if (!showFormalityInfo && formalityButtonRef.current) {
-      const rect = formalityButtonRef.current.getBoundingClientRect()
-      setFormalityInfoPosition({
-        top: rect.bottom + 8,
-        left: rect.left,
-      })
-    }
-    setShowFormalityInfo(!showFormalityInfo)
-  }
 
   return (
     <div className="format-style-settings">
@@ -188,38 +153,8 @@ export default function FormatStyleSettings({
           </div>
 
           {/* Formality Section */}
-          <div className="format-style-section-header-container">
-            <h4 className="format-style-section-header">Formality</h4>
-            <button
-              type="button"
-              className="info-btn"
-              ref={formalityButtonRef}
-              onClick={handleToggleFormalityInfo}
-              title="View formality explanation"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 0a8 8 0 100 16A8 8 0 008 0zm1 12H7V7h2v5zM8 6a1 1 0 110-2 1 1 0 010 2z"/>
-              </svg>
-            </button>
-            {showFormalityInfo && (
-              <div
-                className="examples-dropdown formality-info"
-                ref={formalityInfoRef}
-                style={{
-                  position: 'fixed',
-                  top: formalityInfoPosition.top,
-                  left: formalityInfoPosition.left,
-                }}
-              >
-                <div className="formality-info-content">
-                  <p><strong>Standard:</strong> Discussion points written in first person ("I", "we") with a professional but conversational tone. Key takeaways in third person.</p>
-                  <p><strong>Formal:</strong> Discussion points written in third person with polished, executive brief language suitable for C-suite audiences.</p>
-                </div>
-              </div>
-            )}
-          </div>
-
           <div className="detail-level-field">
+            <label>Formality</label>
             <div className="detail-level-selector">
               <button
                 type="button"
@@ -236,26 +171,9 @@ export default function FormatStyleSettings({
                 Formal
               </button>
             </div>
-          </div>
-
-          {/* Custom Style Instructions - standalone */}
-          <div className="custom-instructions-field">
-            <label htmlFor="custom-style">Custom Style Instructions (Optional)</label>
-            <textarea
-              id="custom-style"
-              value={customStyleInstructions}
-              onChange={(e) => {
-                if (e.target.value.length <= 500) {
-                  onCustomStyleInstructionsChange(e.target.value)
-                }
-              }}
-              className="format-style-textarea"
-              rows={3}
-              maxLength={500}
-              placeholder='Example: "Emphasize cost and ROI insights" or "Use healthcare industry terminology"'
-            />
-            <p className="field-helper-text">
-              Add optional style instructions for tone, vocabulary, or what to emphasize. Do not include formatting or structure instructions - those are handled automatically. ({customStyleInstructions.length}/500)
+            <p className="detail-level-description">
+              {formality === 'standard' && 'Discussion points in first person ("I", "we") with professional but conversational tone.'}
+              {formality === 'formal' && 'Discussion points in third person with polished, executive brief language.'}
             </p>
           </div>
         </div>

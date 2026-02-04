@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import FileInput from './components/FileInput'
-import ApiKeyInput from './components/ApiKeyInput'
 import RespondentInput from './components/RespondentInput'
 import PromptSettings from './components/PromptSettings'
 import QuantSettings from './components/QuantSettings'
@@ -16,7 +15,6 @@ import { savePreset } from './services/firebase'
 import logo from './assets/logo.png'
 import './App.css'
 
-const API_KEY_STORAGE_KEY = 'notes-formatter-api-key'
 const PANEL_WIDTH_STORAGE_KEY = 'notes-formatter-panel-width'
 
 function AppContent() {
@@ -24,7 +22,7 @@ function AppContent() {
 
   const [transcript, setTranscript] = useState('')
   const [notes, setNotes] = useState('')
-  const [apiKey, setApiKey] = useState('')
+  const apiKey = import.meta.env.VITE_CLAUDE_API_KEY || ''
   const [respondentInfo, setRespondentInfo] = useState({ name: '', role: '', company: '' })
   const [respondentManuallyEdited, setRespondentManuallyEdited] = useState(false)
   const [takeawaysGuidance, setTakeawaysGuidance] = useState(getDefaultTakeawaysGuidance())
@@ -54,14 +52,6 @@ function AppContent() {
   })
   const [isResizing, setIsResizing] = useState(false)
   const mainRef = useRef(null)
-
-  // Load API key from localStorage on mount
-  useEffect(() => {
-    const savedKey = localStorage.getItem(API_KEY_STORAGE_KEY)
-    if (savedKey) {
-      setApiKey(savedKey)
-    }
-  }, [])
 
   // Load project settings when project changes
   useEffect(() => {
@@ -118,18 +108,9 @@ function AppContent() {
     }
   }, [isResizing, handleMouseMove, handleMouseUp])
 
-  const handleApiKeyChange = (key) => {
-    setApiKey(key)
-    if (key) {
-      localStorage.setItem(API_KEY_STORAGE_KEY, key)
-    } else {
-      localStorage.removeItem(API_KEY_STORAGE_KEY)
-    }
-  }
-
   const handleFormat = async () => {
     if (!apiKey) {
-      setError('Please enter your Claude API key')
+      setError('API key not configured. Please set VITE_CLAUDE_API_KEY in your .env file.')
       return
     }
     if (!transcript && !notes) {
@@ -215,7 +196,7 @@ function AppContent() {
         bullet: discussionBullet, // Use discussion bullet for quant
       },
     }
-    await exportToWord(output, { mode, existingFile, config: customConfig })
+    await exportToWord(output, { mode, existingFile, config: customConfig, respondentInfo })
   }
 
   const handleSelectProject = (project) => {
@@ -264,8 +245,6 @@ function AppContent() {
 
       <main className={`app-main ${isResizing ? 'resizing' : ''}`} ref={mainRef}>
         <section className="input-panel" style={{ width: `${leftPanelWidth}%` }}>
-          <ApiKeyInput apiKey={apiKey} onChange={handleApiKeyChange} />
-
           <RespondentInput
             value={respondentInfo}
             onChange={handleRespondentChange}
@@ -286,6 +265,26 @@ function AppContent() {
             onChange={setTranscript}
             placeholder="Paste the meeting transcript here, or upload a file..."
           />
+
+          <div className="custom-instructions-field">
+            <label htmlFor="custom-style">Custom Style Instructions (Optional)</label>
+            <textarea
+              id="custom-style"
+              value={customStyleInstructions}
+              onChange={(e) => {
+                if (e.target.value.length <= 500) {
+                  setCustomStyleInstructions(e.target.value)
+                }
+              }}
+              className="format-style-textarea"
+              rows={3}
+              maxLength={500}
+              placeholder='Example: "Emphasize cost and ROI insights" or "Use healthcare industry terminology"'
+            />
+            <p className="field-helper-text">
+              Add optional style instructions for tone, vocabulary, or what to emphasize. ({customStyleInstructions.length}/500)
+            </p>
+          </div>
 
           <PromptSettings
             takeawaysGuidance={takeawaysGuidance}
@@ -310,8 +309,6 @@ function AppContent() {
             onDiscussionQuestionFormatChange={setDiscussionQuestionFormat}
             formality={formality}
             onFormalityChange={setFormality}
-            customStyleInstructions={customStyleInstructions}
-            onCustomStyleInstructionsChange={setCustomStyleInstructions}
           />
 
           {error && <div className="error-message">{error}</div>}
