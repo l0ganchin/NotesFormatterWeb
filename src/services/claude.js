@@ -154,9 +154,18 @@ function buildPrompt(
 
 ## CRITICAL: PROCESS THE ENTIRE TRANSCRIPT
 **You MUST read and format the ENTIRE transcript from start to finish. Do NOT stop after quantitative scores.**
+- The TRANSCRIPT is the source of truth—every substantive topic discussed must appear in the output
 - Interviews often have questions AFTER the quantitative scoring section (e.g., "Any final thoughts?", "Is there anything else?", "One more question...")
 - These post-quantitative questions MUST be included and formatted as Discussion questions
 - Scan the ENTIRE transcript before finishing to ensure nothing is missed
+
+## CRITICAL: EXHAUSTIVE TOPIC COVERAGE
+**The Discussion section must cover ALL topics from the transcript, not just explicit questions.**
+- Segment by TOPICS, not just by interviewer questions—if the interviewee discusses something substantive (even unprompted), it gets its own section
+- If a topic is discussed but not phrased as a question, create an appropriate topic header for it
+- Do NOT omit content just because it wasn't asked as a direct question
+- The goal is exhaustive coverage: every insight, anecdote, opinion, and detail from the conversation should be captured
+- When in doubt, include it—more content is better than missing something important
 
 ## CRITICAL: ACCURACY AND SOURCE FIDELITY
 **All content must be grounded in the meeting notes or transcript.**
@@ -238,6 +247,7 @@ You MUST follow these exact formatting conventions:
 ${takeawaysInstructions}
 
 **Discussion Section:**
+**IMPORTANT: Make the Discussion section as long and comprehensive as possible—aim for at least 5 pages of content.**
 ${discussionQuestionFormat === 'questions'
     ? '- Question headers should be the interviewer\'s questions (infer from context if needed)'
     : '- Use statement headers that summarize the topic discussed (e.g., "Vendor performance evaluation" instead of "How would you rate vendor performance?")'
@@ -249,6 +259,7 @@ ${formality === 'formal'
 - Complete, conversational sentences
 - Preserve specific details: company names, dollar figures, percentages, timeframes
 - Use brackets for contextual clarifications, e.g., "[TikTok & Snapchat]"
+- Capture every point, example, and nuance—do not summarize or abbreviate
 
 ${quantInstructions}
 
