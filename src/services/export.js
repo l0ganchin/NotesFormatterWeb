@@ -5,6 +5,8 @@ import {
   PageBreak,
   HeadingLevel,
   convertInchesToTwip,
+  LevelFormat,
+  AlignmentType,
 } from 'docx'
 import { saveAs } from 'file-saver'
 import DocxMerger from 'docx-merger'
@@ -13,12 +15,72 @@ import DocxMerger from 'docx-merger'
 const DEFAULT_CONFIG = {
   title: { font: 'Aptos', size: 14, bold: false, color: '0F4761' },
   section_header: { font: 'Calibri', size: 11, bold: true, underline: true },
-  takeaway_bullet: { font: 'Calibri', size: 11, bullet: '\u27A4', indent: 0.5 },
+  takeaway_bullet: { font: 'Calibri', size: 11, bullet: '\u2022', indent: 0.5 },
   discussion_question: { font: 'Calibri', size: 11, bold: true, italic: true },
   discussion_bullet: { font: 'Calibri', size: 11, bullet: '\u2022', indent: 0.5 },
   quant_header: { font: 'Calibri', size: 11, bold: true, italic: true },
   quant_category: { font: 'Calibri', size: 11, bold: true },
   quant_bullet: { font: 'Calibri', size: 11, bullet: '\u2022', indent: 0.5 },
+}
+
+// Numbering reference IDs for native Word bullets
+const NUMBERING_REFS = {
+  takeaway: 'takeaway-bullets',
+  discussion: 'discussion-bullets',
+  quant: 'quant-bullets',
+}
+
+// Check if a bullet should use native Word numbering (only standard bullet)
+function shouldUseNativeBullet(bulletChar) {
+  return bulletChar === '\u2022'
+}
+
+// Create numbering config for native bullets
+function createNumberingConfig() {
+  return [
+    {
+      reference: NUMBERING_REFS.takeaway,
+      levels: [{
+        level: 0,
+        format: LevelFormat.BULLET,
+        text: '\u2022',
+        alignment: AlignmentType.LEFT,
+        style: {
+          paragraph: {
+            indent: { left: 720, hanging: 360 },
+          },
+        },
+      }],
+    },
+    {
+      reference: NUMBERING_REFS.discussion,
+      levels: [{
+        level: 0,
+        format: LevelFormat.BULLET,
+        text: '\u2022',
+        alignment: AlignmentType.LEFT,
+        style: {
+          paragraph: {
+            indent: { left: 720, hanging: 360 },
+          },
+        },
+      }],
+    },
+    {
+      reference: NUMBERING_REFS.quant,
+      levels: [{
+        level: 0,
+        format: LevelFormat.BULLET,
+        text: '\u2022',
+        alignment: AlignmentType.LEFT,
+        style: {
+          paragraph: {
+            indent: { left: 720, hanging: 360 },
+          },
+        },
+      }],
+    },
+  ]
 }
 
 // Remove trailing period from bullet point text
@@ -65,6 +127,30 @@ function createBulletParagraph(bulletChar, text, style, spacingBefore = 0, spaci
     indent: {
       left: convertInchesToTwip(indent),
       hanging: convertInchesToTwip(0.25),
+    },
+    spacing: {
+      before: spacingBefore,
+      after: spacingAfter,
+    },
+  })
+}
+
+// Create paragraph with native Word bullet (for standard bullet only)
+function createNativeBulletParagraph(numberingRef, text, style, spacingBefore = 0, spacingAfter = 120) {
+  const cleanText = removeTrailingPeriod(text.replace(/\*\*/g, ''))
+
+  return new Paragraph({
+    children: [
+      new TextRun({
+        text: cleanText,
+        font: style.font || 'Calibri',
+        size: (style.size || 11) * 2,
+        bold: style.textBold || false,
+      }),
+    ],
+    numbering: {
+      reference: numberingRef,
+      level: 0,
     },
     spacing: {
       before: spacingBefore,
@@ -271,7 +357,11 @@ export function parseMarkdownToDocx(markdownText, config = DEFAULT_CONFIG, isApp
 
       if (currentSection === 'takeaways') {
         const style = config.takeaway_bullet || DEFAULT_CONFIG.takeaway_bullet
-        paragraphs.push(createBulletParagraph(style.bullet, bulletText, style, 0, 120))
+        if (shouldUseNativeBullet(style.bullet)) {
+          paragraphs.push(createNativeBulletParagraph(NUMBERING_REFS.takeaway, bulletText, style, 0, 120))
+        } else {
+          paragraphs.push(createBulletParagraph(style.bullet, bulletText, style, 0, 120))
+        }
       } else if (currentSection === 'quantitative') {
         const style = config.quant_bullet || DEFAULT_CONFIG.quant_bullet
 
@@ -282,12 +372,20 @@ export function parseMarkdownToDocx(markdownText, config = DEFAULT_CONFIG, isApp
           const reasonValue = bulletText.replace('**Reason:**', '').replace('Reason:', '').trim()
           paragraphs.push(createQuantBulletWithLabel(style.bullet, 'Reason:', reasonValue, style))
         } else {
-          paragraphs.push(createBulletParagraph(style.bullet, bulletText, style, 0, 40))
+          if (shouldUseNativeBullet(style.bullet)) {
+            paragraphs.push(createNativeBulletParagraph(NUMBERING_REFS.quant, bulletText, style, 0, 40))
+          } else {
+            paragraphs.push(createBulletParagraph(style.bullet, bulletText, style, 0, 40))
+          }
         }
       } else {
         // Discussion or default
         const style = config.discussion_bullet || DEFAULT_CONFIG.discussion_bullet
-        paragraphs.push(createBulletParagraph(style.bullet, bulletText, style, 0, 80))
+        if (shouldUseNativeBullet(style.bullet)) {
+          paragraphs.push(createNativeBulletParagraph(NUMBERING_REFS.discussion, bulletText, style, 0, 80))
+        } else {
+          paragraphs.push(createBulletParagraph(style.bullet, bulletText, style, 0, 80))
+        }
       }
 
       i++
@@ -328,6 +426,9 @@ export async function exportToWord(markdownText, options = {}) {
     // Create new document content
     const paragraphs = parseMarkdownToDocx(markdownText, config, true) // isAppend = true
     const newDoc = new Document({
+      numbering: {
+        config: createNumberingConfig(),
+      },
       sections: [
         {
           properties: {
@@ -364,6 +465,9 @@ export async function exportToWord(markdownText, options = {}) {
   // New document mode
   const paragraphs = parseMarkdownToDocx(markdownText, config)
   const doc = new Document({
+    numbering: {
+      config: createNumberingConfig(),
+    },
     sections: [
       {
         properties: {

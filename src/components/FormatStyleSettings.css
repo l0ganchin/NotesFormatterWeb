@@ -127,6 +127,13 @@
   border-color: #E8412A;
 }
 
+.bullet-footnote {
+  font-size: 0.65rem;
+  color: #666;
+  margin: 0.25rem 0 0.5rem 0;
+  font-style: italic;
+}
+
 .radio-field {
   display: flex;
   flex-direction: column;

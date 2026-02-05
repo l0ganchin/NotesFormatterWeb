@@ -1,6 +1,6 @@
 import './FormattedPreview.css'
 
-function parseMarkdownToElements(markdown) {
+function parseMarkdownToElements(markdown, takeawayBullet = '\u2022', discussionBullet = '\u2022') {
   if (!markdown) return []
 
   const lines = markdown.trim().split('\n')
@@ -95,7 +95,7 @@ function parseMarkdownToElements(markdown) {
       if (currentSection === 'takeaways') {
         elements.push(
           <p key={key++} className="preview-bullet preview-takeaway-bullet">
-            <span className="bullet-char">➤</span>
+            <span className="bullet-char">{takeawayBullet}</span>
             <span>{bulletText.replace(/\*\*/g, '')}</span>
           </p>
         )
@@ -105,7 +105,7 @@ function parseMarkdownToElements(markdown) {
           const value = bulletText.replace('**Score:**', '').replace('Score:', '').trim()
           elements.push(
             <p key={key++} className="preview-bullet preview-quant-bullet">
-              <span className="bullet-char">•</span>
+              <span className="bullet-char">{discussionBullet}</span>
               <span><strong>Score:</strong> {value}</span>
             </p>
           )
@@ -113,14 +113,14 @@ function parseMarkdownToElements(markdown) {
           const value = bulletText.replace('**Reason:**', '').replace('Reason:', '').trim()
           elements.push(
             <p key={key++} className="preview-bullet preview-quant-bullet">
-              <span className="bullet-char">•</span>
+              <span className="bullet-char">{discussionBullet}</span>
               <span><strong>Reason:</strong> {value}</span>
             </p>
           )
         } else {
           elements.push(
             <p key={key++} className="preview-bullet preview-quant-bullet">
-              <span className="bullet-char">•</span>
+              <span className="bullet-char">{discussionBullet}</span>
               <span>{bulletText.replace(/\*\*/g, '')}</span>
             </p>
           )
@@ -129,7 +129,7 @@ function parseMarkdownToElements(markdown) {
         // Discussion bullets
         elements.push(
           <p key={key++} className="preview-bullet preview-discussion-bullet">
-            <span className="bullet-char">•</span>
+            <span className="bullet-char">{discussionBullet}</span>
             <span>{bulletText.replace(/\*\*/g, '')}</span>
           </p>
         )
@@ -150,8 +150,8 @@ function parseMarkdownToElements(markdown) {
   return elements
 }
 
-export default function FormattedPreview({ content }) {
-  const elements = parseMarkdownToElements(content)
+export default function FormattedPreview({ content, takeawayBullet = '\u2022', discussionBullet = '\u2022' }) {
+  const elements = parseMarkdownToElements(content, takeawayBullet, discussionBullet)
 
   return (
     <div className="formatted-preview">

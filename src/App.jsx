@@ -29,7 +29,7 @@ function AppContent() {
   const [detailLevel, setDetailLevel] = useState('balanced')
   const [quantCategories, setQuantCategories] = useState([])
   const [coverageLevel, setCoverageLevel] = useState('thorough')
-  const [takeawayBullet, setTakeawayBullet] = useState('\u27A4')
+  const [takeawayBullet, setTakeawayBullet] = useState('\u2022')
   const [discussionBullet, setDiscussionBullet] = useState('\u2022')
   const [formality, setFormality] = useState('standard')
   const [discussionQuestionFormat, setDiscussionQuestionFormat] = useState('questions')
@@ -52,6 +52,7 @@ function AppContent() {
   })
   const [isResizing, setIsResizing] = useState(false)
   const mainRef = useRef(null)
+  const abortControllerRef = useRef(null)
 
   // Load project settings when project changes
   useEffect(() => {
@@ -60,7 +61,7 @@ function AppContent() {
       setTakeawaysGuidance(currentProject.takeawaysGuidance ?? '')
       setQuantCategories(currentProject.quantCategories ?? [])
       setCoverageLevel(currentProject.coverageLevel ?? 'thorough')
-      setTakeawayBullet(currentProject.takeawayBullet ?? '\u27A4')
+      setTakeawayBullet(currentProject.takeawayBullet ?? '\u2022')
       setDiscussionBullet(currentProject.discussionBullet ?? '\u2022')
       setFormality(currentProject.formality ?? 'standard')
       setDiscussionQuestionFormat(currentProject.discussionQuestionFormat ?? 'questions')
@@ -122,6 +123,9 @@ function AppContent() {
     setIsLoading(true)
     setOutput('')
 
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController()
+
     try {
       const result = await formatNotes(transcript, notes, apiKey, {
         takeawaysGuidance,
@@ -137,6 +141,7 @@ function AppContent() {
         onChunk: (partialOutput) => {
           setOutput(partialOutput)
         },
+        abortSignal: abortControllerRef.current.signal,
       })
       setOutput(result)
 
@@ -154,10 +159,35 @@ function AppContent() {
         }
       }
     } catch (err) {
-      setError(err.message || 'Failed to format notes')
+      // Don't show error if user cancelled the request
+      if (err.name !== 'AbortError') {
+        setError(err.message || 'Failed to format notes')
+      }
     } finally {
       setIsLoading(false)
+      abortControllerRef.current = null
     }
+  }
+
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+  }
+
+  const handleReset = () => {
+    // Stop any in-progress formatting
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    // Clear all inputs and output
+    setTranscript('')
+    setNotes('')
+    setRespondentInfo({ name: '', role: '', company: '' })
+    setRespondentManuallyEdited(false)
+    setCustomStyleInstructions('')
+    setOutput('')
+    setError('')
   }
 
   const canSubmit = apiKey && (transcript || notes) && !isLoading
@@ -233,7 +263,7 @@ function AppContent() {
   return (
     <div className="app">
       <header className="app-header">
-        <div className="header-title">
+        <div className="header-title" onClick={handleReset} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleReset()}>
           <img src={logo} alt="Company logo" className="header-logo" />
           <h1>Notes Formatter</h1>
         </div>
@@ -313,13 +343,24 @@ function AppContent() {
 
           {error && <div className="error-message">{error}</div>}
 
-          <button
-            className="format-btn"
-            onClick={handleFormat}
-            disabled={!canSubmit}
-          >
-            {isLoading ? 'Formatting...' : 'Format Notes'}
-          </button>
+          <div className="format-btn-group">
+            <button
+              className="format-btn"
+              onClick={handleFormat}
+              disabled={!canSubmit}
+            >
+              {isLoading ? 'Formatting...' : 'Format Notes'}
+            </button>
+            {isLoading && (
+              <button
+                className="stop-btn"
+                onClick={handleStop}
+                type="button"
+              >
+                Stop
+              </button>
+            )}
+          </div>
         </section>
 
         <div className="panel-resizer" onMouseDown={handleMouseDown}>
@@ -331,6 +372,8 @@ function AppContent() {
             content={output}
             isLoading={isLoading}
             onExportWord={handleExportWordClick}
+            takeawayBullet={takeawayBullet}
+            discussionBullet={discussionBullet}
           />
         </section>
       </main>

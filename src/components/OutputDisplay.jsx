@@ -12,7 +12,7 @@ const LOADING_MESSAGES = [
   'Almost there...',
 ]
 
-export default function OutputDisplay({ content, isLoading, onExportWord }) {
+export default function OutputDisplay({ content, isLoading, onExportWord, takeawayBullet = '\u2022', discussionBullet = '\u2022' }) {
   const [viewMode, setViewMode] = useState('preview') // 'preview' or 'raw'
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [messageIndex, setMessageIndex] = useState(0)
@@ -82,7 +82,7 @@ export default function OutputDisplay({ content, isLoading, onExportWord }) {
           </div>
         </div>
         <div className="output-content preview-mode streaming">
-          <FormattedPreview content={content} />
+          <FormattedPreview content={content} takeawayBullet={takeawayBullet} discussionBullet={discussionBullet} />
         </div>
       </div>
     )
@@ -139,7 +139,7 @@ export default function OutputDisplay({ content, isLoading, onExportWord }) {
       )}
       <div className={`output-content ${viewMode === 'preview' ? 'preview-mode' : ''}`}>
         {viewMode === 'preview' ? (
-          <FormattedPreview content={content} />
+          <FormattedPreview content={content} takeawayBullet={takeawayBullet} discussionBullet={discussionBullet} />
         ) : (
           <pre>{content}</pre>
         )}

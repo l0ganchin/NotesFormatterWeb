@@ -24,6 +24,12 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.header-title:hover {
+  opacity: 0.8;
 }
 
 .header-logo {
@@ -123,6 +129,32 @@
 .format-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.format-btn-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.format-btn-group .format-btn {
+  flex: 1;
+}
+
+.stop-btn {
+  padding: 0.6rem 1rem;
+  background: #6b7280;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.stop-btn:hover {
+  background: #4b5563;
 }
 
 /* Responsive: stack on smaller screens */

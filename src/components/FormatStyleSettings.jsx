@@ -152,6 +152,10 @@ export default function FormatStyleSettings({
             </select>
           </div>
 
+          <p className="bullet-footnote">
+            Standard bullet (•) exports as a native Word bullet. Other styles display correctly but appear as text characters.
+          </p>
+
           {/* Formality Section */}
           <div className="detail-level-field">
             <label>Formality</label>

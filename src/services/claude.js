@@ -277,7 +277,8 @@ export async function formatNotes(transcript, notes, apiKey, options = {}) {
     takeawayBullet = '\u27A4',
     discussionBullet = '\u2022',
     coverageLevel = 'thorough',
-    onChunk
+    onChunk,
+    abortSignal
   } = options
   const systemPrompt = buildPrompt(
     takeawaysGuidance,
@@ -318,6 +319,7 @@ ${transcript}`
         },
       ],
     }),
+    signal: abortSignal,
   })
 
   if (!response.ok) {
