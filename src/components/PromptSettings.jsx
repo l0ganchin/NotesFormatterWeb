@@ -18,6 +18,8 @@ const EXAMPLE_GUIDANCE = {
 export default function PromptSettings({
   takeawaysGuidance,
   onTakeawaysChange,
+  takeawayPreset,
+  onPresetChange,
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showExamples, setShowExamples] = useState(false)
@@ -57,10 +59,12 @@ export default function PromptSettings({
 
   const handleClear = () => {
     onTakeawaysChange('')
+    onPresetChange('auto')
   }
 
   const handleUseExample = (type) => {
     onTakeawaysChange(EXAMPLE_GUIDANCE[type])
+    onPresetChange(type)
     setShowExamples(false)
   }
 

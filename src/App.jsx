@@ -26,6 +26,7 @@ function AppContent() {
   const [respondentInfo, setRespondentInfo] = useState({ name: '', role: '', company: '' })
   const [respondentManuallyEdited, setRespondentManuallyEdited] = useState(false)
   const [takeawaysGuidance, setTakeawaysGuidance] = useState(getDefaultTakeawaysGuidance())
+  const [takeawayPreset, setTakeawayPreset] = useState('customer')
   const [detailLevel, setDetailLevel] = useState('balanced')
   const [quantCategories, setQuantCategories] = useState([])
   const [coverageLevel, setCoverageLevel] = useState('exhaustive')
@@ -59,6 +60,7 @@ function AppContent() {
     if (currentProject) {
       // Use nullish coalescing to preserve empty string (autodetect mode)
       setTakeawaysGuidance(currentProject.takeawaysGuidance ?? '')
+      setTakeawayPreset(currentProject.takeawayPreset ?? 'customer')
       setQuantCategories(currentProject.quantCategories ?? [])
       setCoverageLevel(currentProject.coverageLevel ?? 'exhaustive')
       setTakeawayBullet(currentProject.takeawayBullet ?? '\u2022')
@@ -129,6 +131,7 @@ function AppContent() {
     try {
       const result = await formatNotes(transcript, notes, apiKey, {
         takeawaysGuidance,
+        takeawayPreset,
         quantCategories,
         detailLevel,
         respondentInfo: respondentManuallyEdited ? respondentInfo : null,
@@ -245,6 +248,7 @@ function AppContent() {
       const updatedProject = {
         ...currentProject,
         takeawaysGuidance,
+        takeawayPreset,
         quantCategories,
         coverageLevel,
         takeawayBullet,
@@ -258,7 +262,7 @@ function AppContent() {
     }, 1000)
 
     return () => clearTimeout(timeoutId)
-  }, [takeawaysGuidance, quantCategories, coverageLevel, takeawayBullet, discussionBullet, formality, discussionQuestionFormat, customStyleInstructions, currentProject, user])
+  }, [takeawaysGuidance, takeawayPreset, quantCategories, coverageLevel, takeawayBullet, discussionBullet, formality, discussionQuestionFormat, customStyleInstructions, currentProject, user])
 
   return (
     <div className="app">
@@ -312,13 +316,15 @@ function AppContent() {
               placeholder='Example: "Emphasize cost and ROI insights" or "Use healthcare industry terminology"'
             />
             <p className="field-helper-text">
-              Add optional style instructions for tone, vocabulary, or what to emphasize. ({customStyleInstructions.length}/500)
+              Add optional style instructions for tone, vocabulary, what to emphasize, or specific speakers to focus on. ({customStyleInstructions.length}/500)
             </p>
           </div>
 
           <PromptSettings
             takeawaysGuidance={takeawaysGuidance}
             onTakeawaysChange={setTakeawaysGuidance}
+            takeawayPreset={takeawayPreset}
+            onPresetChange={setTakeawayPreset}
           />
 
           <QuantSettings

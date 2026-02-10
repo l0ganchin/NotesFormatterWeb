@@ -16,13 +16,17 @@ const DETAIL_LEVEL_INSTRUCTIONS = {
 }
 
 // These style/quality rules are always included and not editable by users
-function getFixedTakeawaysRules(detailLevel = 'balanced') {
+function getFixedTakeawaysRules(detailLevel = 'balanced', takeawayPreset = 'customer') {
   const lengthInstruction = DETAIL_LEVEL_INSTRUCTIONS[detailLevel] || DETAIL_LEVEL_INSTRUCTIONS.balanced
+
+  const namingRule = takeawayPreset === 'customer'
+    ? '- Do NOT refer to the respondent by name—use "the client," "the customer," or "the respondent" instead'
+    : '- Use your best judgment for how to refer to the respondent. You may use their last name (e.g., "Smith," "Johnson") but do NOT use first names or "the client." Other appropriate references include "the respondent," "the interviewee," or role-based references (e.g., "the CEO," "the VP of Sales")'
 
   return `**Style & Quality Requirements (always applied):**
 - Write 4-5 substantive takeaways (fewer only if the source material genuinely lacks content)
 ${lengthInstruction}
-- Do NOT refer to the respondent by name—use "the client," "the customer," or "the respondent" instead
+${namingRule}
 - Frame everything through a management consulting lens: you are evaluating the health of a vendor relationship or company
 - Tone should read like a polished executive brief suitable for sharing with clients, not internal meeting notes
 - When competitors, growth percentages, pricing models, or investment areas appear in the source material, prioritize surfacing them
@@ -72,9 +76,9 @@ ${postQuantReminder}`
 ${postQuantReminder}`
 }
 
-function buildTakeawaysInstructions(takeawaysGuidance = '', detailLevel = 'balanced') {
+function buildTakeawaysInstructions(takeawaysGuidance = '', detailLevel = 'balanced', takeawayPreset = 'customer') {
   const trimmedGuidance = takeawaysGuidance.trim()
-  const fixedRules = getFixedTakeawaysRules(detailLevel)
+  const fixedRules = getFixedTakeawaysRules(detailLevel, takeawayPreset)
 
   // Manual mode: user provided topical guidance
   if (trimmedGuidance) {
@@ -143,10 +147,11 @@ function buildPrompt(
   customStyleInstructions = '',
   takeawayBullet = '\u27A4',
   discussionBullet = '\u2022',
-  coverageLevel = 'thorough'
+  coverageLevel = 'thorough',
+  takeawayPreset = 'customer'
 ) {
   const quantInstructions = buildQuantInstructions(quantCategories)
-  const takeawaysInstructions = buildTakeawaysInstructions(takeawaysGuidance, detailLevel)
+  const takeawaysInstructions = buildTakeawaysInstructions(takeawaysGuidance, detailLevel, takeawayPreset)
   const respondentInstructions = buildRespondentInstructions(respondentInfo)
   const coverageInstructions = buildCoverageInstructions(coverageLevel)
 
@@ -279,6 +284,7 @@ ${respondentInstructions}`
 export async function formatNotes(transcript, notes, apiKey, options = {}) {
   const {
     takeawaysGuidance,
+    takeawayPreset = 'customer',
     quantCategories = [],
     detailLevel = 'balanced',
     respondentInfo = null,
@@ -301,7 +307,8 @@ export async function formatNotes(transcript, notes, apiKey, options = {}) {
     customStyleInstructions,
     takeawayBullet,
     discussionBullet,
-    coverageLevel
+    coverageLevel,
+    takeawayPreset
   )
 
   const userMessage = `## RAW MEETING NOTES
