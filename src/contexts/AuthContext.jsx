@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { onAuthChange, signInWithGoogle, signOutUser } from '../services/firebase'
+import { onAuthChange, signInWithGoogle, signInWithMicrosoft, signOutUser } from '../services/firebase'
 
 const AuthContext = createContext(null)
 
@@ -15,11 +15,26 @@ export function AuthProvider({ children }) {
     return unsubscribe
   }, [])
 
-  const signIn = async () => {
+  const signInGoogle = async () => {
     try {
       await signInWithGoogle()
     } catch (error) {
-      console.error('Sign in error:', error)
+      console.error('Google sign in error:', error)
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        throw new Error('An account already exists with this email. Please sign in with Microsoft instead.')
+      }
+      throw error
+    }
+  }
+
+  const signInMicrosoft = async () => {
+    try {
+      await signInWithMicrosoft()
+    } catch (error) {
+      console.error('Microsoft sign in error:', error)
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        throw new Error('An account already exists with this email. Please sign in with Google instead.')
+      }
       throw error
     }
   }
@@ -36,7 +51,8 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     loading,
-    signIn,
+    signInGoogle,
+    signInMicrosoft,
     signOut,
     isAuthenticated: !!user
   }

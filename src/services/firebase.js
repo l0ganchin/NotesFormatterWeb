@@ -4,6 +4,7 @@ import {
   getAuth,
   signInWithPopup,
   GoogleAuthProvider,
+  OAuthProvider,
   signOut,
   onAuthStateChanged
 } from 'firebase/auth'
@@ -35,10 +36,16 @@ const app = initializeApp(firebaseConfig)
 const auth = getAuth(app)
 const db = getFirestore(app)
 const googleProvider = new GoogleAuthProvider()
+const microsoftProvider = new OAuthProvider('microsoft.com')
+microsoftProvider.setCustomParameters({ tenant: 'c29afe05-358b-4330-94ad-d661e8b87a48' })
 
 // Auth functions
 export function signInWithGoogle() {
   return signInWithPopup(auth, googleProvider)
+}
+
+export function signInWithMicrosoft() {
+  return signInWithPopup(auth, microsoftProvider)
 }
 
 export function signOutUser() {
