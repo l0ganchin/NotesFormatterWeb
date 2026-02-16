@@ -176,3 +176,227 @@
 .output-content.streaming {
   border-bottom: 3px solid #E8412A;
 }
+
+/* Save to Project bar */
+.save-to-project-bar {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: #151515;
+  border-top: 1px solid #333;
+  flex-shrink: 0;
+}
+
+.save-project-btn {
+  flex: 1;
+  padding: 0.45rem 0.6rem;
+  background: #1a3a1a;
+  border: 1px solid #2a5a2a;
+  border-radius: 4px;
+  color: #7bc67b;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.save-project-btn:hover:not(:disabled) {
+  background: #1f4a1f;
+  border-color: #3a7a3a;
+}
+
+.save-project-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.save-project-btn.saved {
+  background: #1a2a1a;
+  border-color: #2a4a2a;
+  color: #5a9a5a;
+}
+
+/* Append to Master Doc button */
+.master-append-btn {
+  flex: 1;
+  padding: 0.45rem 0.6rem;
+  background: #1a2a3a;
+  border: 1px solid #2a4a6a;
+  border-radius: 4px;
+  color: #7bb8e0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.master-append-btn:hover:not(:disabled) {
+  background: #1f3a5a;
+  border-color: #3a6a9a;
+}
+
+.master-append-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.master-append-btn.saved {
+  background: #1a2a3a;
+  border-color: #2a4a5a;
+  color: #5a8aaa;
+}
+
+/* Inline master doc picker */
+.master-picker-inline {
+  background: #151515;
+  border-top: 1px solid #333;
+  flex-shrink: 0;
+  padding: 0.5rem 0.75rem;
+}
+
+.master-picker-loading {
+  padding: 0.5rem 0;
+  text-align: center;
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.master-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 150px;
+  overflow-y: auto;
+  margin-bottom: 0.4rem;
+}
+
+.master-picker-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 3px;
+  color: #ccc;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.master-picker-item:hover {
+  background: #222;
+  border-color: #444;
+}
+
+.master-picker-item.selected {
+  background: #1a2a3a;
+  border-color: #3a6a9a;
+  color: #7bb8e0;
+}
+
+.master-picker-item-name {
+  font-weight: 500;
+}
+
+.master-picker-item-count {
+  color: #666;
+  font-size: 0.7rem;
+}
+
+.master-picker-item.selected .master-picker-item-count {
+  color: #5a8aaa;
+}
+
+.master-picker-empty {
+  padding: 0.5rem 0;
+  text-align: center;
+  color: #666;
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+}
+
+.master-picker-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.master-picker-right-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.master-picker-create-btn {
+  padding: 0.3rem 0.5rem;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 3px;
+  color: #888;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.master-picker-create-btn:hover {
+  color: #ccc;
+  border-color: #666;
+}
+
+.master-picker-cancel {
+  padding: 0.3rem 0.5rem;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 3px;
+  color: #888;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.master-picker-cancel:hover {
+  background: #333;
+  color: #ccc;
+}
+
+.master-picker-confirm {
+  padding: 0.3rem 0.6rem;
+  background: #1a2a3a;
+  border: 1px solid #2a4a6a;
+  border-radius: 3px;
+  color: #7bb8e0;
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.master-picker-confirm:hover:not(:disabled) {
+  background: #1f3a5a;
+}
+
+.master-picker-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Create master doc form */
+.master-picker-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.master-picker-name-input {
+  padding: 0.4rem 0.5rem;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 3px;
+  color: #ccc;
+  font-size: 0.75rem;
+  outline: none;
+}
+
+.master-picker-name-input:focus {
+  border-color: #3a6a9a;
+}

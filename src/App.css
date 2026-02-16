@@ -50,6 +50,7 @@
   border-radius: 0 0 8px 8px;
   border: 1px solid #333;
   border-top: none;
+  min-height: 0;
 }
 
 .app-main.resizing {
@@ -64,6 +65,8 @@
   overflow-y: auto;
   background: #0a0a0a;
   min-width: 0;
+  height: 100%;
+  min-height: 0;
 }
 
 .output-panel {

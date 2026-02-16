@@ -142,6 +142,7 @@
   flex-shrink: 0;
 }
 
+.share-project-btn,
 .delete-project-btn {
   padding: 0.4rem;
   background: transparent;
@@ -154,8 +155,14 @@
   opacity: 0;
 }
 
+.project-option:hover .share-project-btn,
 .project-option:hover .delete-project-btn {
   opacity: 1;
+}
+
+.share-project-btn:hover {
+  color: #4dabf7;
+  background: rgba(77, 171, 247, 0.1);
 }
 
 .delete-project-btn:hover {

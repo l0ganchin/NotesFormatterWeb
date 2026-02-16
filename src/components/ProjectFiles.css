@@ -1,0 +1,362 @@
+.project-files {
+  border: 1px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #1a1a1a;
+  flex-shrink: 0;
+}
+
+.project-files-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: #1a1a1a;
+  border: none;
+  color: #ccc;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  transition: background-color 0.2s;
+}
+
+.project-files-toggle:hover {
+  background: #222;
+}
+
+.toggle-chevron {
+  transition: transform 0.2s;
+}
+
+.toggle-chevron.open {
+  transform: rotate(90deg);
+}
+
+.project-files-content {
+  border-top: 1px solid #333;
+}
+
+.project-files-tabs {
+  display: flex;
+  border-bottom: 1px solid #333;
+}
+
+.pf-tab {
+  flex: 1;
+  padding: 0.45rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #888;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.pf-tab:hover {
+  color: #ccc;
+}
+
+.pf-tab.active {
+  color: #fff;
+  border-bottom-color: #E8412A;
+}
+
+.pf-tab-actions {
+  padding: 0.4rem 0.6rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.pf-action-btn {
+  padding: 0.3rem 0.6rem;
+  background: #E8412A;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.pf-action-btn:hover:not(:disabled) {
+  background: #c9361f;
+}
+
+.pf-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Export All button - secondary style */
+.pf-export-all-btn {
+  background: #333;
+  color: #ccc;
+}
+
+.pf-export-all-btn:hover:not(:disabled) {
+  background: #444;
+}
+
+/* Save Current Input button - green tint */
+.pf-save-input-btn {
+  background: #1a3a1a;
+  color: #7bc67b;
+}
+
+.pf-save-input-btn:hover:not(:disabled) {
+  background: #1f4a1f;
+}
+
+.pf-save-input-btn.saved {
+  background: #1a2a1a;
+  color: #5a9a5a;
+}
+
+.pf-new-master-form {
+  padding: 0.5rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pf-new-master-form input {
+  padding: 0.4rem 0.6rem;
+  background: #0d0d0d;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.pf-new-master-form input:focus {
+  outline: none;
+  border-color: #E8412A;
+}
+
+.pf-new-master-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.pf-new-master-actions button {
+  padding: 0.3rem 0.6rem;
+  background: #333;
+  border: none;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.pf-new-master-actions button:hover {
+  background: #444;
+}
+
+.pf-create-btn {
+  background: #E8412A !important;
+  color: white !important;
+}
+
+.pf-create-btn:hover:not(:disabled) {
+  background: #c9361f !important;
+}
+
+.pf-create-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+.pf-error {
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 100, 100, 0.1);
+  color: #ff6b6b;
+  font-size: 0.75rem;
+}
+
+.pf-loading {
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.pf-file-list {
+  /* max-height set via inline style for resizability */
+  overflow-y: auto;
+}
+
+.pf-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid #2a2a2a;
+  transition: background-color 0.15s;
+}
+
+.pf-file-row:hover {
+  background: #222;
+}
+
+.pf-file-row:last-child {
+  border-bottom: none;
+}
+
+.pf-file-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.pf-file-name {
+  font-size: 0.8rem;
+  color: #ddd;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-file-meta {
+  font-size: 0.7rem;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-file-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.pf-file-row:hover .pf-file-actions {
+  opacity: 1;
+}
+
+.pf-rename-btn,
+.pf-download-btn,
+.pf-delete-btn {
+  padding: 0.25rem;
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.pf-rename-btn:hover {
+  color: #ffc107;
+  background: rgba(255, 193, 7, 0.1);
+}
+
+.pf-download-btn:hover {
+  color: #4dabf7;
+  background: rgba(77, 171, 247, 0.1);
+}
+
+.pf-delete-btn:hover {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.pf-rename-input {
+  width: 100%;
+  padding: 0.2rem 0.4rem;
+  background: #0d0d0d;
+  border: 1px solid #E8412A;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.pf-empty {
+  padding: 1rem;
+  text-align: center;
+  color: #555;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* Resize handle */
+.pf-resize-handle {
+  height: 6px;
+  background: #1a1a1a;
+  cursor: row-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+  border-top: 1px solid #2a2a2a;
+}
+
+.pf-resize-handle:hover {
+  background: #2a2a2a;
+}
+
+.pf-resize-grip {
+  width: 40px;
+  height: 3px;
+  background: #444;
+  border-radius: 2px;
+  transition: background-color 0.2s;
+}
+
+.pf-resize-handle:hover .pf-resize-grip {
+  background: #E8412A;
+}
+
+.pf-delete-confirm {
+  padding: 0.6rem;
+  background: #2a1a1a;
+  border-top: 1px solid #4a2a2a;
+}
+
+.pf-delete-confirm p {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  color: #ff9999;
+}
+
+.pf-delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.pf-delete-actions button {
+  padding: 0.3rem 0.6rem;
+  background: #333;
+  border: none;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.pf-delete-actions button:hover {
+  background: #444;
+}
+
+.pf-confirm-delete-btn {
+  background: #dc3545 !important;
+  color: white !important;
+}
+
+.pf-confirm-delete-btn:hover {
+  background: #c82333 !important;
+}

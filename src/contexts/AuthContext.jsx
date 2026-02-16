@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { onAuthChange, signInWithGoogle, signInWithMicrosoft, signOutUser } from '../services/firebase'
+import { onAuthChange, signInWithGoogle, signInWithMicrosoft, signOutUser, upsertUserProfile } from '../services/firebase'
 
 const AuthContext = createContext(null)
 
@@ -11,6 +11,12 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthChange((user) => {
       setUser(user)
       setLoading(false)
+      // Upsert user profile for sharing lookups
+      if (user) {
+        upsertUserProfile(user).catch(err =>
+          console.warn('Failed to upsert user profile:', err)
+        )
+      }
     })
     return unsubscribe
   }, [])

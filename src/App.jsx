@@ -9,13 +9,16 @@ import OutputDisplay from './components/OutputDisplay'
 import ExportModal from './components/ExportModal'
 import UserMenu from './components/UserMenu'
 import ProjectSelector from './components/ProjectSelector'
+import ProjectFiles from './components/ProjectFiles'
+import ProjectSharing from './components/ProjectSharing'
 import { formatNotes, getDefaultTakeawaysGuidance, parseQuantCategories, parseRespondentInfo } from './services/claude'
 import { exportToWord, DEFAULT_CONFIG } from './services/export'
-import { savePreset } from './services/firebase'
+import { updateProject } from './services/firebase'
 import logo from './assets/logo.png'
 import './App.css'
 
 const PANEL_WIDTH_STORAGE_KEY = 'notes-formatter-panel-width'
+
 
 function AppContent() {
   const { user } = useAuth()
@@ -45,6 +48,12 @@ function AppContent() {
 
   // Export modal state
   const [exportModalOpen, setExportModalOpen] = useState(false)
+
+  // Project sharing modal state
+  const [sharingProject, setSharingProject] = useState(null)
+
+  // Project files panel - starts open when a project is active
+  const [projectFilesOpen, setProjectFilesOpen] = useState(true)
 
   // Resizable panel state
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
@@ -245,20 +254,21 @@ function AppContent() {
     if (!currentProject || !user) return
 
     const timeoutId = setTimeout(async () => {
-      const updatedProject = {
-        ...currentProject,
-        takeawaysGuidance,
-        takeawayPreset,
-        quantCategories,
-        coverageLevel,
-        takeawayBullet,
-        discussionBullet,
-        formality,
-        discussionQuestionFormat,
-        customStyleInstructions,
+      try {
+        await updateProject(currentProject.id, {
+          takeawaysGuidance,
+          takeawayPreset,
+          quantCategories,
+          coverageLevel,
+          takeawayBullet,
+          discussionBullet,
+          formality,
+          discussionQuestionFormat,
+          customStyleInstructions,
+        })
+      } catch (err) {
+        console.warn('Failed to auto-save project settings:', err)
       }
-      await savePreset(user.uid, updatedProject)
-      setCurrentProject(updatedProject)
     }, 1000)
 
     return () => clearTimeout(timeoutId)
@@ -273,12 +283,26 @@ function AppContent() {
         </div>
         <UserMenu
           onOpenProjects={() => setProjectSelectorOpen(true)}
+          onOpenSharing={(project) => setSharingProject(project)}
           currentProject={currentProject}
         />
       </header>
 
       <main className={`app-main ${isResizing ? 'resizing' : ''}`} ref={mainRef}>
         <section className="input-panel" style={{ width: `${leftPanelWidth}%` }}>
+          {/* Project Files Browser - only visible when a project is selected */}
+          {currentProject && (
+            <ProjectFiles
+              projectId={currentProject.id}
+              isOpen={projectFilesOpen}
+              onToggle={() => setProjectFilesOpen(!projectFilesOpen)}
+              user={user}
+              transcript={transcript}
+              notes={notes}
+              respondentInfo={respondentInfo}
+            />
+          )}
+
           <RespondentInput
             value={respondentInfo}
             onChange={handleRespondentChange}
@@ -380,6 +404,11 @@ function AppContent() {
             onExportWord={handleExportWordClick}
             takeawayBullet={takeawayBullet}
             discussionBullet={discussionBullet}
+            currentProject={currentProject}
+            user={user}
+            respondentInfo={respondentInfo}
+            transcript={transcript}
+            notes={notes}
           />
         </section>
       </main>
@@ -388,6 +417,12 @@ function AppContent() {
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
         onExport={handleExport}
+        currentProject={currentProject}
+        user={user}
+        respondentInfo={respondentInfo}
+        output={output}
+        takeawayBullet={takeawayBullet}
+        discussionBullet={discussionBullet}
       />
 
       <ProjectSelector
@@ -396,6 +431,16 @@ function AppContent() {
         currentProject={currentProject}
         onSelectProject={handleSelectProject}
         onOneOffMode={handleOneOffMode}
+        onOpenSharing={(project) => {
+          setProjectSelectorOpen(false)
+          setSharingProject(project)
+        }}
+      />
+
+      <ProjectSharing
+        isOpen={!!sharingProject}
+        onClose={() => setSharingProject(null)}
+        project={sharingProject}
       />
     </div>
   )

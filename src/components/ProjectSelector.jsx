@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { getPresets, savePreset, deletePreset } from '../services/firebase'
+import { getUserProjects, createProject, deleteProject, migrateLegacyPresets } from '../services/firebase'
 import './ProjectSelector.css'
 
-function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onOneOffMode }) {
+function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onOneOffMode, onOpenSharing }) {
   const { user, isAuthenticated } = useAuth()
   const [projects, setProjects] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -23,7 +23,15 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
     setIsLoading(true)
     setError('')
     try {
-      const userProjects = await getPresets(user.uid)
+      // Migrate legacy presets on first load
+      await migrateLegacyPresets(user.uid)
+      const userProjects = await getUserProjects(user.uid)
+      // Sort by updatedAt desc (handle Firestore Timestamps)
+      userProjects.sort((a, b) => {
+        const aTime = a.updatedAt?.toMillis?.() || a.updatedAt?.seconds * 1000 || 0
+        const bTime = b.updatedAt?.toMillis?.() || b.updatedAt?.seconds * 1000 || 0
+        return bTime - aTime
+      })
       setProjects(userProjects)
     } catch (err) {
       console.error('Failed to load projects:', err)
@@ -44,15 +52,12 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
     setError('')
 
     try {
-      const project = {
-        id: newProjectName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
+      const project = await createProject(user.uid, {
         name: newProjectName.trim(),
         takeawaysGuidance: '',
         quantCategories: [],
-        createdAt: new Date().toISOString()
-      }
+      })
 
-      await savePreset(user.uid, project)
       await loadProjects()
       setShowNewProject(false)
       setNewProjectName('')
@@ -74,10 +79,10 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
   const handleDeleteProject = async (projectId, e) => {
     e.stopPropagation()
     if (!user) return
-    if (!confirm('Delete this project? This cannot be undone.')) return
+    if (!confirm('Delete this project and all its files? This cannot be undone.')) return
 
     try {
-      await deletePreset(user.uid, projectId)
+      await deleteProject(projectId)
       await loadProjects()
       if (currentProject?.id === projectId) {
         onOneOffMode()
@@ -88,9 +93,23 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
     }
   }
 
+  const handleShareClick = (project, e) => {
+    e.stopPropagation()
+    onOpenSharing?.(project)
+  }
+
   const handleOneOffMode = () => {
     onOneOffMode()
     onClose()
+  }
+
+  const formatDate = (timestamp) => {
+    if (!timestamp) return ''
+    // Handle Firestore Timestamp objects
+    if (timestamp.toDate) return timestamp.toDate().toLocaleDateString()
+    // Handle ISO strings
+    if (typeof timestamp === 'string') return new Date(timestamp).toLocaleDateString()
+    return ''
   }
 
   if (!isOpen) return null
@@ -196,12 +215,22 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
                   <div className="project-option-text">
                     <strong>{project.name}</strong>
                     <span>
-                      Created {new Date(project.createdAt).toLocaleDateString()}
+                      {formatDate(project.createdAt) && `Created ${formatDate(project.createdAt)}`}
+                      {project.members?.length > 1 && ` · ${project.members.length} members`}
                     </span>
                   </div>
                   {currentProject?.id === project.id && (
                     <span className="active-badge">Active</span>
                   )}
+                  <button
+                    className="share-project-btn"
+                    onClick={(e) => handleShareClick(project, e)}
+                    title="Share project"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                    </svg>
+                  </button>
                   <button
                     className="delete-project-btn"
                     onClick={(e) => handleDeleteProject(project.id, e)}

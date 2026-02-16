@@ -285,3 +285,142 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Master doc mode styles */
+.master-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.master-mode p {
+  margin: 0;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.master-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.master-doc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 1rem;
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.master-doc-item:hover {
+  border-color: #444;
+  background: #282828;
+}
+
+.master-doc-item.selected {
+  border-color: #E8412A;
+  background: rgba(232, 65, 42, 0.1);
+}
+
+.master-doc-item strong {
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.master-doc-item small {
+  color: #888;
+  font-size: 0.75rem;
+}
+
+.new-master-btn {
+  padding: 0.6rem 1rem;
+  background: transparent;
+  border: 1px dashed #555;
+  border-radius: 8px;
+  color: #888;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.new-master-btn:hover {
+  border-color: #E8412A;
+  color: #ccc;
+}
+
+.new-master-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #252525;
+  border: 1px solid #444;
+  border-radius: 8px;
+}
+
+.new-master-form input {
+  padding: 0.5rem 0.75rem;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.new-master-form input:focus {
+  outline: none;
+  border-color: #E8412A;
+}
+
+.new-master-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.new-master-form-actions button {
+  padding: 0.4rem 0.75rem;
+  background: #333;
+  border: none;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.new-master-form-actions button:hover {
+  background: #444;
+}
+
+.create-master-btn {
+  background: #E8412A !important;
+  color: white !important;
+  font-weight: 500;
+}
+
+.create-master-btn:hover:not(:disabled) {
+  background: #c9361f !important;
+}
+
+.create-master-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+.append-status {
+  padding: 0.5rem 0.75rem;
+  background: rgba(232, 65, 42, 0.1);
+  border: 1px solid rgba(232, 65, 42, 0.3);
+  border-radius: 4px;
+  color: #E8412A;
+  font-size: 0.8rem;
+  text-align: center;
+}
