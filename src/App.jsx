@@ -37,7 +37,8 @@ function AppContent() {
   const [discussionBullet, setDiscussionBullet] = useState('\u2022')
   const [formality, setFormality] = useState('standard')
   const [discussionQuestionFormat, setDiscussionQuestionFormat] = useState('questions')
-  const [customStyleInstructions, setCustomStyleInstructions] = useState('Please be exhaustive and detailed, drawing on the source material')
+  const [customStyleInstructions, setCustomStyleInstructions] = useState('Please be exhaustive and detailed, drawing on the source material. Include all details valuable to the conversation. Rewrite bullets as full sentences with added context so someone who didn\'t attend the call can easily follow. Full sentences only, formal language. Neutral in tone. Make at least 6 pages as content allows.')
+  const [projectContext, setProjectContext] = useState('')
   const [output, setOutput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -76,7 +77,8 @@ function AppContent() {
       setDiscussionBullet(currentProject.discussionBullet ?? '\u2022')
       setFormality(currentProject.formality ?? 'standard')
       setDiscussionQuestionFormat(currentProject.discussionQuestionFormat ?? 'questions')
-      setCustomStyleInstructions(currentProject.customStyleInstructions ?? 'Please be exhaustive and detailed, drawing on the source material')
+      setCustomStyleInstructions(currentProject.customStyleInstructions ?? 'Please be exhaustive and detailed, drawing on the source material. Include all details valuable to the conversation. Rewrite bullets as full sentences with added context so someone who didn\'t attend the call can easily follow. Full sentences only, formal language. Neutral in tone. Make at least 6 pages as content allows.')
+      setProjectContext(currentProject.projectContext ?? '')
     }
   }, [currentProject])
 
@@ -150,6 +152,7 @@ function AppContent() {
         formality,
         discussionQuestionFormat,
         customStyleInstructions,
+        projectContext,
         onChunk: (partialOutput) => {
           setOutput(partialOutput)
         },
@@ -197,7 +200,8 @@ function AppContent() {
     setNotes('')
     setRespondentInfo({ name: '', role: '', company: '' })
     setRespondentManuallyEdited(false)
-    setCustomStyleInstructions('Please be exhaustive and detailed, drawing on the source material')
+    setCustomStyleInstructions('Please be exhaustive and detailed, drawing on the source material. Include all details valuable to the conversation. Rewrite bullets as full sentences with added context so someone who didn\'t attend the call can easily follow. Full sentences only, formal language. Neutral in tone. Make at least 6 pages as content allows.')
+    setProjectContext('')
     setOutput('')
     setError('')
   }
@@ -265,6 +269,7 @@ function AppContent() {
           formality,
           discussionQuestionFormat,
           customStyleInstructions,
+          projectContext,
         })
       } catch (err) {
         console.warn('Failed to auto-save project settings:', err)
@@ -272,7 +277,7 @@ function AppContent() {
     }, 1000)
 
     return () => clearTimeout(timeoutId)
-  }, [takeawaysGuidance, takeawayPreset, quantCategories, coverageLevel, takeawayBullet, discussionBullet, formality, discussionQuestionFormat, customStyleInstructions, currentProject, user])
+  }, [takeawaysGuidance, takeawayPreset, quantCategories, coverageLevel, takeawayBullet, discussionBullet, formality, discussionQuestionFormat, customStyleInstructions, projectContext, currentProject, user])
 
   return (
     <div className="app">
@@ -325,22 +330,42 @@ function AppContent() {
           />
 
           <div className="custom-instructions-field">
-            <label htmlFor="custom-style">Custom Style Instructions (Optional)</label>
+            <label htmlFor="custom-style">Custom Style Instructions</label>
             <textarea
               id="custom-style"
               value={customStyleInstructions}
               onChange={(e) => {
-                if (e.target.value.length <= 500) {
+                if (e.target.value.length <= 1000) {
                   setCustomStyleInstructions(e.target.value)
                 }
               }}
               className="format-style-textarea"
               rows={3}
-              maxLength={500}
-              placeholder='Example: "Emphasize cost and ROI insights" or "Use healthcare industry terminology"'
+              maxLength={1000}
+              placeholder='e.g., "Emphasize cost and ROI insights" or "Use healthcare industry terminology"'
             />
             <p className="field-helper-text">
-              Add optional style instructions for tone, vocabulary, what to emphasize, or specific speakers to focus on. ({customStyleInstructions.length}/500)
+              Style instructions for tone, detail level, sentence structure, and what to emphasize. ({customStyleInstructions.length}/1000)
+            </p>
+          </div>
+
+          <div className="custom-instructions-field">
+            <label htmlFor="project-context">Project Context (Optional)</label>
+            <textarea
+              id="project-context"
+              value={projectContext}
+              onChange={(e) => {
+                if (e.target.value.length <= 500) {
+                  setProjectContext(e.target.value)
+                }
+              }}
+              className="format-style-textarea"
+              rows={2}
+              maxLength={500}
+              placeholder='e.g., "3 interviewees from Harry&#39;s (client of Harvest), Charles is on our team and is interviewing. Focus on details valuable to Harvest and the client relationship."'
+            />
+            <p className="field-helper-text">
+              Identify who is who — client vs. team members, company names, and what to focus on. ({projectContext.length}/500)
             </p>
           </div>
 

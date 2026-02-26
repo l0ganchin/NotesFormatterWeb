@@ -148,7 +148,8 @@ function buildPrompt(
   takeawayBullet = '\u27A4',
   discussionBullet = '\u2022',
   coverageLevel = 'thorough',
-  takeawayPreset = 'customer'
+  takeawayPreset = 'customer',
+  projectContext = ''
 ) {
   const quantInstructions = buildQuantInstructions(quantCategories)
   const takeawaysInstructions = buildTakeawaysInstructions(takeawaysGuidance, detailLevel, takeawayPreset)
@@ -271,6 +272,9 @@ ${quantInstructions}
 ${customStyleInstructions ? `**Custom Style Guidance:**
 ${customStyleInstructions}
 
+` : ''}${projectContext ? `**Project Context:**
+${projectContext}
+
 ` : ''}**General:**
 ${coverageInstructions}
 - Professional but conversational tone
@@ -291,6 +295,7 @@ export async function formatNotes(transcript, notes, apiKey, options = {}) {
     formality = 'standard',
     discussionQuestionFormat = 'questions',
     customStyleInstructions = '',
+    projectContext = '',
     takeawayBullet = '\u27A4',
     discussionBullet = '\u2022',
     coverageLevel = 'thorough',
@@ -308,7 +313,8 @@ export async function formatNotes(transcript, notes, apiKey, options = {}) {
     takeawayBullet,
     discussionBullet,
     coverageLevel,
-    takeawayPreset
+    takeawayPreset,
+    projectContext
   )
 
   const userMessage = `## RAW MEETING NOTES
