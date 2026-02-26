@@ -316,17 +316,17 @@ function AppContent() {
           />
 
           <FileInput
-            label="Meeting Notes"
-            value={notes}
-            onChange={setNotes}
-            placeholder="Paste your raw meeting notes here, or upload a file..."
-          />
-
-          <FileInput
             label="Transcript"
             value={transcript}
             onChange={setTranscript}
             placeholder="Paste the meeting transcript here, or upload a file..."
+          />
+
+          <FileInput
+            label="Meeting Notes (optional)"
+            value={notes}
+            onChange={setNotes}
+            placeholder="Paste your raw meeting notes here, or upload a file..."
           />
 
           <div className="custom-instructions-field">
