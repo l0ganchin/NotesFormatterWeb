@@ -57,10 +57,7 @@ function AppContent() {
   const [projectFilesOpen, setProjectFilesOpen] = useState(true)
 
   // Resizable panel state
-  const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
-    const saved = localStorage.getItem(PANEL_WIDTH_STORAGE_KEY)
-    return saved ? parseInt(saved, 10) : 50
-  })
+  const [leftPanelWidth, setLeftPanelWidth] = useState(50)
   const [isResizing, setIsResizing] = useState(false)
   const mainRef = useRef(null)
   const abortControllerRef = useRef(null)
