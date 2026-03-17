@@ -103,6 +103,42 @@
   z-index: 10;
 }
 
+/* Google Sign-in Button (dark mode) */
+.google-sign-in-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.875rem 0.5rem 0.7rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.google-sign-in-btn:hover:not(:disabled) {
+  background: #252525;
+  border-color: #444;
+  color: #fff;
+}
+
+.google-sign-in-btn:active:not(:disabled) {
+  background: #2a2a2a;
+}
+
+.google-sign-in-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-sign-in-btn svg {
+  flex-shrink: 0;
+}
+
 /* Microsoft Sign-in Button (dark mode) */
 .microsoft-sign-in-btn {
   display: flex;
@@ -259,12 +295,14 @@
 /* Responsive */
 @media (max-width: 600px) {
   .my-projects-btn span,
+  .google-sign-in-btn span,
   .microsoft-sign-in-btn span,
   .active-project-btn span {
     display: none;
   }
 
   .my-projects-btn,
+  .google-sign-in-btn,
   .microsoft-sign-in-btn,
   .active-project-btn {
     padding: 0.5rem;
