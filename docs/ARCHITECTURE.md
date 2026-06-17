@@ -23,7 +23,7 @@ The formatted output can be exported as `.docx` Word documents, saved to cloud-b
 |-------|-----------|
 | Frontend | React 18 (hooks, functional components) |
 | Build | Vite 6 |
-| AI | Claude API (claude-sonnet-4-20250514, streaming SSE) |
+| AI | Claude API (claude-sonnet-4-6, streaming SSE) |
 | Auth | Firebase Auth (Microsoft OAuth primary, Google OAuth secondary) |
 | Database | Cloud Firestore |
 | File Storage | Firebase Storage |
@@ -103,7 +103,7 @@ User Input                    Claude API                    Output & Storage
 -----------                   ----------                    ----------------
 Meeting Notes  ──┐
                  ├──> buildPrompt() ──> POST /v1/messages ──> Streaming SSE
-Transcript    ──┘    (claude.js)       (claude-sonnet-4)      ──> setOutput()
+Transcript    ──┘    (claude.js)       (claude-sonnet-4-6)    ──> setOutput()
                                                                     │
 Settings:                                                           v
 - Respondent Info                                           OutputDisplay

@@ -67,7 +67,7 @@ The prompt is assembled from multiple configurable sections:
 | Detail | Value |
 |--------|-------|
 | Endpoint | `https://api.anthropic.com/v1/messages` |
-| Model | `claude-sonnet-4-20250514` |
+| Model | `claude-sonnet-4-6` |
 | Max tokens | 16384 |
 | Streaming | Yes (SSE) |
 | Auth header | `x-api-key` + `anthropic-dangerous-direct-browser-access` |
