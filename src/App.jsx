@@ -11,6 +11,7 @@ import UserMenu from './components/UserMenu'
 import ProjectSelector from './components/ProjectSelector'
 import ProjectFiles from './components/ProjectFiles'
 import ProjectSharing from './components/ProjectSharing'
+import HowToGuide from './components/HowToGuide'
 import { formatNotes, getDefaultTakeawaysGuidance, parseQuantCategories, parseRespondentInfo } from './services/claude'
 import { exportToWord, DEFAULT_CONFIG } from './services/export'
 import { updateProject } from './services/firebase'
@@ -54,6 +55,9 @@ function AppContent() {
 
   // Project sharing modal state
   const [sharingProject, setSharingProject] = useState(null)
+
+  // How-to-use guide modal state
+  const [helpOpen, setHelpOpen] = useState(false)
 
   // Project files panel - starts open when a project is active
   const [projectFilesOpen, setProjectFilesOpen] = useState(true)
@@ -313,9 +317,22 @@ function AppContent() {
   return (
     <div className="app">
       <header className="app-header">
-        <div className="header-title" onClick={handleReset} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleReset()}>
-          <img src={logo} alt="Company logo" className="header-logo" />
-          <h1>Notes Formatter</h1>
+        <div className="header-left">
+          <div className="header-title" onClick={handleReset} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleReset()}>
+            <img src={logo} alt="Company logo" className="header-logo" />
+            <h1>Notes Formatter</h1>
+          </div>
+          <button
+            type="button"
+            className="header-info-btn"
+            onClick={() => setHelpOpen(true)}
+            title="How to use"
+            aria-label="How to use this app"
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 0a8 8 0 100 16A8 8 0 008 0zm1 12H7V7h2v5zM8 6a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
+          </button>
         </div>
         <UserMenu
           onOpenProjects={() => setProjectSelectorOpen(true)}
@@ -500,6 +517,11 @@ function AppContent() {
         isOpen={!!sharingProject}
         onClose={() => setSharingProject(null)}
         project={sharingProject}
+      />
+
+      <HowToGuide
+        isOpen={helpOpen}
+        onClose={() => setHelpOpen(false)}
       />
     </div>
   )

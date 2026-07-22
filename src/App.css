@@ -20,12 +20,37 @@
   align-items: center;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .header-title {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   cursor: pointer;
   transition: opacity 0.2s;
+}
+
+.header-info-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-4);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.header-info-btn:hover {
+  color: var(--text-2);
+  background: var(--bg-4);
 }
 
 .header-title:hover {

@@ -130,6 +130,25 @@ Collapsible section for configuring Key Takeaways topical guidance.
 
 ---
 
+## `src/components/HowToGuide.jsx`
+
+### Responsibility
+"How to Use" guide modal, opened from the ⓘ button next to the header title.
+
+### Props
+| Prop | Type | Description |
+|------|------|-------------|
+| isOpen | boolean | Whether the modal is shown |
+| onClose | function | Closes the modal |
+
+### Behavior
+- Animated overlay (fade) + panel (slide-up/scale), consistent with design tokens
+- Closes on Escape, backdrop click, or the × button
+- Content: quick start, inputs (incl. additive meeting-notes rule), settings panels, output, exporting (incl. ToC update tip), projects
+- Pure static content — update it when workflows change
+
+---
+
 ## `src/components/QuantSettings.jsx`
 
 ### Responsibility
