@@ -140,6 +140,8 @@ Collapsible section for configuring quantitative score categories.
 |------|------|-------------|
 | categories | array | [{name, scale}] array |
 | onCategoriesChange | function(array) | Updates categories array |
+| includeImportance | boolean | Whether Importance ratings are expected for every category |
+| onIncludeImportanceChange | function(bool) | Updates the importance toggle |
 
 ### Behavior
 - Collapsed by default
@@ -147,7 +149,8 @@ Collapsible section for configuring quantitative score categories.
 - **Manual mode** (categories present): Shows list with name input + scale stepper (1-100) + remove button
 - "+ Add Category" button appends a new `{name: '', scale: 10}` entry
 - "Clear All (Auto-Detect)" button empties the array
-- After first formatting, `parseQuantCategories()` auto-populates categories from output
+- **"Include Importance ratings" checkbox**: when on, every quant category gets an `Importance:` bullet before Score (N/A when not asked); when off, Importance appears only if detected in the interview. Saved with project settings
+- After first formatting, `parseQuantCategories()` auto-populates categories from output, and the Importance checkbox auto-checks if `**Importance:**` bullets were detected
 
 ---
 

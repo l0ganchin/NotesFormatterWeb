@@ -1,5 +1,11 @@
 import './FormattedPreview.css'
 
+// Discussion and Quantitative bullets drop their trailing period on export;
+// mirror that here so the preview matches the .docx. Takeaways keep periods.
+function stripTrailingPeriod(text) {
+  return text.replace(/\.\s*$/, '').trim()
+}
+
 function parseMarkdownToElements(markdown, takeawayBullet = '\u2022', discussionBullet = '\u2022') {
   if (!markdown) return []
 
@@ -100,9 +106,17 @@ function parseMarkdownToElements(markdown, takeawayBullet = '\u2022', discussion
           </p>
         )
       } else if (currentSection === 'quantitative') {
-        // Check for Score: or Reason: labels
-        if (bulletText.startsWith('**Score:**') || bulletText.startsWith('Score:')) {
-          const value = bulletText.replace('**Score:**', '').replace('Score:', '').trim()
+        // Check for Importance: / Score: / Reason: labels
+        if (bulletText.startsWith('**Importance:**') || bulletText.startsWith('Importance:')) {
+          const value = stripTrailingPeriod(bulletText.replace('**Importance:**', '').replace('Importance:', ''))
+          elements.push(
+            <p key={key++} className="preview-bullet preview-quant-bullet">
+              <span className="bullet-char">{discussionBullet}</span>
+              <span><strong>Importance:</strong> {value}</span>
+            </p>
+          )
+        } else if (bulletText.startsWith('**Score:**') || bulletText.startsWith('Score:')) {
+          const value = stripTrailingPeriod(bulletText.replace('**Score:**', '').replace('Score:', ''))
           elements.push(
             <p key={key++} className="preview-bullet preview-quant-bullet">
               <span className="bullet-char">{discussionBullet}</span>
@@ -110,7 +124,7 @@ function parseMarkdownToElements(markdown, takeawayBullet = '\u2022', discussion
             </p>
           )
         } else if (bulletText.startsWith('**Reason:**') || bulletText.startsWith('Reason:')) {
-          const value = bulletText.replace('**Reason:**', '').replace('Reason:', '').trim()
+          const value = stripTrailingPeriod(bulletText.replace('**Reason:**', '').replace('Reason:', ''))
           elements.push(
             <p key={key++} className="preview-bullet preview-quant-bullet">
               <span className="bullet-char">{discussionBullet}</span>
@@ -121,7 +135,7 @@ function parseMarkdownToElements(markdown, takeawayBullet = '\u2022', discussion
           elements.push(
             <p key={key++} className="preview-bullet preview-quant-bullet">
               <span className="bullet-char">{discussionBullet}</span>
-              <span>{bulletText.replace(/\*\*/g, '')}</span>
+              <span>{stripTrailingPeriod(bulletText.replace(/\*\*/g, ''))}</span>
             </p>
           )
         }
@@ -130,7 +144,7 @@ function parseMarkdownToElements(markdown, takeawayBullet = '\u2022', discussion
         elements.push(
           <p key={key++} className="preview-bullet preview-discussion-bullet">
             <span className="bullet-char">{discussionBullet}</span>
-            <span>{bulletText.replace(/\*\*/g, '')}</span>
+            <span>{stripTrailingPeriod(bulletText.replace(/\*\*/g, ''))}</span>
           </p>
         )
       }

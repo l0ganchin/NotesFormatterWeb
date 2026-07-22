@@ -3,11 +3,8 @@ import { getDefaultTakeawaysGuidance } from '../services/claude'
 import './PromptSettings.css'
 
 const EXAMPLE_GUIDANCE = {
-  customer: `- [First substantive insight about the relationship, how it started, or overall context]
-- [Second insight about what they value or the company's strengths]
-- [Third insight about challenges, pain points, or areas for improvement]
-- [Fourth insight about growth potential, future outlook, or strategic needs]
-- [Optional fifth bullet for additional context, e.g., "Feedback should be considered in context: [relevant caveat]"]`,
+  // Customer template is the app default — single source of truth in claude.js
+  customer: getDefaultTakeawaysGuidance(),
   management: `- [Their domain/role and perspective on company trajectory]
 - [Key operational insights from their area]
 - [Strategic challenges or opportunities they see]
@@ -121,10 +118,10 @@ export default function PromptSettings({
                         </button>
                       </div>
                       <ul>
-                        <li>Relationship origin and overall context</li>
-                        <li>What they value / company's strengths</li>
-                        <li>Challenges, pain points, or areas for improvement</li>
-                        <li>Growth potential, future outlook, or strategic needs</li>
+                        <li>Relationship context and evolution</li>
+                        <li>Core sources of value and differentiation</li>
+                        <li>Performance gaps and opportunities to improve</li>
+                        <li>Growth potential and future role</li>
                       </ul>
                     </div>
                     <div className="examples-section">

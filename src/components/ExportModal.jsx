@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { getProjectFiles, appendToMasterDoc, createMasterDoc } from '../services/fileStorage'
-import { parseMarkdownToDocx, DEFAULT_CONFIG } from '../services/export'
-import { Document, Packer } from 'docx'
+import { buildDocxBlob, DEFAULT_CONFIG } from '../services/export'
 import './ExportModal.css'
 
 export default function ExportModal({
@@ -99,9 +98,7 @@ export default function ExportModal({
       discussion_bullet: { ...DEFAULT_CONFIG.discussion_bullet, bullet: discussionBullet || '\u2022' },
       quant_bullet: { ...DEFAULT_CONFIG.quant_bullet, bullet: discussionBullet || '\u2022' },
     }
-    const paragraphs = parseMarkdownToDocx(output, config, true)
-    const doc = new Document({ sections: [{ children: paragraphs }] })
-    return await Packer.toBlob(doc)
+    return buildDocxBlob(output, config, true)
   }
 
   const handleAppendToMaster = async () => {

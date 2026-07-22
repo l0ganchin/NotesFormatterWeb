@@ -8,7 +8,7 @@
 3. User pastes meeting notes into the "Meeting Notes" FileInput (or uploads .docx/.txt)
 4. User pastes transcript into the "Transcript" FileInput (or uploads .docx/.txt)
 5. (Optional) User adjusts settings:
-   - Custom Style Instructions (free text, 500 char max)
+   - Custom Style Instructions (free text, 1000 char max; tone/emphasis only — cannot override output structure)
    - Key Takeaways topical guidance (PromptSettings)
    - Quantitative categories (QuantSettings)
    - Format & Style options (FormatStyleSettings)

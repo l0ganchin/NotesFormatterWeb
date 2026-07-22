@@ -112,6 +112,15 @@
   font-size: 0.8rem;
 }
 
+.warning-message {
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.35);
+  border-radius: 4px;
+  color: #d4a017;
+  font-size: 0.8rem;
+}
+
 .format-btn {
   padding: 0.6rem 1.5rem;
   background: #E8412A;

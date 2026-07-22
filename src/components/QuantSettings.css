@@ -225,6 +225,32 @@
   background: #444;
 }
 
+.importance-toggle {
+  padding-top: 0.75rem;
+  border-top: 1px solid #333;
+}
+
+.importance-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.importance-toggle-label input[type='checkbox'] {
+  accent-color: #E8412A;
+  cursor: pointer;
+}
+
+.importance-toggle-description {
+  font-size: 0.65rem;
+  color: #666;
+  margin: 0.3rem 0 0 1.35rem;
+  line-height: 1.4;
+}
+
 .quant-help {
   padding-top: 0.75rem;
   border-top: 1px solid #333;

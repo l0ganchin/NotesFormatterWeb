@@ -36,6 +36,7 @@ Top-level project document. Projects are the primary organizational unit.
 | takeawaysGuidance | string | Saved Key Takeaways topical guidance text |
 | takeawayPreset | string | "customer" or "management" |
 | quantCategories | array | Saved quant categories `[{name, scale}]` |
+| includeImportance | boolean | Include an `Importance:` rating line before each quant Score (N/A when not asked) |
 | coverageLevel | string | "focused", "thorough", or "exhaustive" |
 | takeawayBullet | string | Bullet character for takeaways |
 | discussionBullet | string | Bullet character for discussion |

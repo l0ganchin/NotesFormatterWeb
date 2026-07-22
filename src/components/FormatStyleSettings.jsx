@@ -13,8 +13,11 @@ const DETAIL_LEVELS = [
   { value: 'detailed', label: 'Detailed' },
 ]
 
-// Bullet options matching Word's built-in Bullet Library
+// Bullet options matching Word's built-in Bullet Library.
+// '•' (standard bullet) is the app default and must stay in this list —
+// otherwise the select shows the wrong option for the default state.
 const BULLET_OPTIONS = [
+  { label: '• Standard bullet', value: '•', display: '•' },
   { label: '● Filled circle', value: '\u25CF', display: '●' },
   { label: '○ Empty circle', value: '\u25CB', display: '○' },
   { label: '■ Filled square', value: '\u25A0', display: '■' },
@@ -153,7 +156,7 @@ export default function FormatStyleSettings({
           </div>
 
           <p className="bullet-footnote">
-            Standard bullet (•) exports as a native Word bullet. Other styles display correctly but appear as text characters.
+            All bullet styles export as native Word list bullets (pressing Enter in Word continues the list).
           </p>
 
           {/* Formality Section */}

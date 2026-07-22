@@ -32,6 +32,7 @@ function AppContent() {
   const [takeawayPreset, setTakeawayPreset] = useState('customer')
   const [detailLevel, setDetailLevel] = useState('balanced')
   const [quantCategories, setQuantCategories] = useState([])
+  const [includeImportance, setIncludeImportance] = useState(false)
   const [coverageLevel, setCoverageLevel] = useState('exhaustive')
   const [takeawayBullet, setTakeawayBullet] = useState('\u2022')
   const [discussionBullet, setDiscussionBullet] = useState('\u2022')
@@ -42,6 +43,7 @@ function AppContent() {
   const [output, setOutput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [warning, setWarning] = useState('')
 
   // Project state
   const [currentProject, setCurrentProject] = useState(null)
@@ -69,6 +71,7 @@ function AppContent() {
       setTakeawaysGuidance(currentProject.takeawaysGuidance ?? '')
       setTakeawayPreset(currentProject.takeawayPreset ?? 'customer')
       setQuantCategories(currentProject.quantCategories ?? [])
+      setIncludeImportance(currentProject.includeImportance ?? false)
       setCoverageLevel(currentProject.coverageLevel ?? 'exhaustive')
       setTakeawayBullet(currentProject.takeawayBullet ?? '\u2022')
       setDiscussionBullet(currentProject.discussionBullet ?? '\u2022')
@@ -130,6 +133,7 @@ function AppContent() {
     }
 
     setError('')
+    setWarning('')
     setIsLoading(true)
     setOutput('')
 
@@ -141,6 +145,7 @@ function AppContent() {
         takeawaysGuidance,
         takeawayPreset,
         quantCategories,
+        includeImportance,
         detailLevel,
         respondentInfo: respondentManuallyEdited ? respondentInfo : null,
         coverageLevel,
@@ -155,20 +160,30 @@ function AppContent() {
         },
         abortSignal: abortControllerRef.current.signal,
       })
-      setOutput(result)
+      setOutput(result.text)
+
+      if (result.truncated) {
+        setWarning('The output hit the model\'s length limit and may be cut off before the end of the transcript. Review the end of the document — consider a more focused coverage level or formatting the interview in sections.')
+      }
 
       if (!respondentManuallyEdited) {
-        const detectedInfo = parseRespondentInfo(result)
+        const detectedInfo = parseRespondentInfo(result.text)
         if (detectedInfo.name || detectedInfo.role || detectedInfo.company) {
           setRespondentInfo(detectedInfo)
         }
       }
 
       if (quantCategories.length === 0) {
-        const detectedCategories = parseQuantCategories(result)
+        const detectedCategories = parseQuantCategories(result.text)
         if (detectedCategories.length > 0) {
           setQuantCategories(detectedCategories)
         }
+      }
+
+      // Auto-check the Importance toggle when the interview turned out to
+      // include importance ratings (mirrors the quant-category auto-fill)
+      if (!includeImportance && result.text.includes('**Importance:**')) {
+        setIncludeImportance(true)
       }
     } catch (err) {
       // Don't show error if user cancelled the request
@@ -201,6 +216,7 @@ function AppContent() {
     setProjectContext('')
     setOutput('')
     setError('')
+    setWarning('')
   }
 
   const canSubmit = apiKey && (transcript || notes) && !isLoading
@@ -260,6 +276,7 @@ function AppContent() {
           takeawaysGuidance,
           takeawayPreset,
           quantCategories,
+          includeImportance,
           coverageLevel,
           takeawayBullet,
           discussionBullet,
@@ -274,7 +291,7 @@ function AppContent() {
     }, 1000)
 
     return () => clearTimeout(timeoutId)
-  }, [takeawaysGuidance, takeawayPreset, quantCategories, coverageLevel, takeawayBullet, discussionBullet, formality, discussionQuestionFormat, customStyleInstructions, projectContext, currentProject, user])
+  }, [takeawaysGuidance, takeawayPreset, quantCategories, includeImportance, coverageLevel, takeawayBullet, discussionBullet, formality, discussionQuestionFormat, customStyleInstructions, projectContext, currentProject, user])
 
   return (
     <div className="app">
@@ -376,6 +393,8 @@ function AppContent() {
           <QuantSettings
             categories={quantCategories}
             onCategoriesChange={setQuantCategories}
+            includeImportance={includeImportance}
+            onIncludeImportanceChange={setIncludeImportance}
           />
 
           <FormatStyleSettings
@@ -394,6 +413,7 @@ function AppContent() {
           />
 
           {error && <div className="error-message">{error}</div>}
+          {warning && <div className="warning-message">{warning}</div>}
 
           <div className="format-btn-group">
             <button

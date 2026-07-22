@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import './QuantSettings.css'
 
-export default function QuantSettings({ categories, onCategoriesChange }) {
+export default function QuantSettings({
+  categories,
+  onCategoriesChange,
+  includeImportance = false,
+  onIncludeImportanceChange,
+}) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   const isManualMode = categories.length > 0
@@ -138,6 +143,21 @@ export default function QuantSettings({ categories, onCategoriesChange }) {
                 </button>
               )}
             </div>
+          </div>
+
+          <div className="importance-toggle">
+            <label className="importance-toggle-label">
+              <input
+                type="checkbox"
+                checked={includeImportance}
+                onChange={(e) => onIncludeImportanceChange(e.target.checked)}
+              />
+              <span>Include Importance ratings</span>
+            </label>
+            <p className="importance-toggle-description">
+              Adds an <strong>Importance:</strong> line before each Score (N/A when not asked).
+              When off, Importance is only included if detected in the interview.
+            </p>
           </div>
 
           <div className="quant-help">

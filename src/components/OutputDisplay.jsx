@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import FormattedPreview from './FormattedPreview'
 import { uploadFormattedNote, getProjectFiles, appendToMasterDoc, createMasterDoc } from '../services/fileStorage'
-import { Document, Packer } from 'docx'
-import { parseMarkdownToDocx, DEFAULT_CONFIG } from '../services/export'
+import { buildDocxBlob, DEFAULT_CONFIG } from '../services/export'
 import './OutputDisplay.css'
 
 const LOADING_MESSAGES = [
@@ -93,16 +92,15 @@ export default function OutputDisplay({
     return `${secs}s`
   }
 
+  const exportConfig = () => ({
+    ...DEFAULT_CONFIG,
+    takeaway_bullet: { ...DEFAULT_CONFIG.takeaway_bullet, bullet: takeawayBullet || '\u2022' },
+    discussion_bullet: { ...DEFAULT_CONFIG.discussion_bullet, bullet: discussionBullet || '\u2022' },
+    quant_bullet: { ...DEFAULT_CONFIG.quant_bullet, bullet: discussionBullet || '\u2022' },
+  })
+
   const buildNoteBlob = async () => {
-    const config = {
-      ...DEFAULT_CONFIG,
-      takeaway_bullet: { ...DEFAULT_CONFIG.takeaway_bullet, bullet: takeawayBullet || '\u2022' },
-      discussion_bullet: { ...DEFAULT_CONFIG.discussion_bullet, bullet: discussionBullet || '\u2022' },
-      quant_bullet: { ...DEFAULT_CONFIG.quant_bullet, bullet: discussionBullet || '\u2022' },
-    }
-    const paragraphs = parseMarkdownToDocx(content, config, true)
-    const doc = new Document({ sections: [{ children: paragraphs }] })
-    return await Packer.toBlob(doc)
+    return buildDocxBlob(content, exportConfig(), true)
   }
 
   const handleShowMasterPicker = async () => {
@@ -162,11 +160,7 @@ export default function OutputDisplay({
     if (!currentProject || !user || !content) return
     setSavingNote(true)
     try {
-      const paragraphs = parseMarkdownToDocx(content)
-      const doc = new Document({
-        sections: [{ children: paragraphs }]
-      })
-      const blob = await Packer.toBlob(doc)
+      const blob = await buildDocxBlob(content, exportConfig())
 
       const name = sanitizeFilename(respondentInfo.name)
       const role = sanitizeFilename(respondentInfo.role)

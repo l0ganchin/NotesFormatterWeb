@@ -130,7 +130,10 @@ When a project is active, settings changes are debounced (1 second) and auto-sav
 - **Project mode**: A project is selected. Enables file browser, save-to-project, master doc management, and sharing.
 
 ### 4. Streaming Output
-The Claude API call uses SSE (Server-Sent Events). The `formatNotes()` function reads the stream, accumulates text, and calls `onChunk()` to update the UI in real-time. Users see output appear progressively.
+The Claude API call uses SSE (Server-Sent Events). The `formatNotes()` function reads the stream, accumulates text, and calls `onChunk()` to update the UI in real-time. Users see output appear progressively. The call runs at temperature 0.3 for run-to-run consistency, and binding style rules are restated after the transcript so long inputs don't wash out the settings.
+
+### 4b. Bullet Glyphs Are a Render-Time Concern
+The model always emits standard `- ` markdown bullets. The user-selected bullet characters (takeaway/discussion) are applied by FormattedPreview (on screen) and by the export layer (as native Word list bullets via `buildDocxBlob()`). Model output never contains custom glyphs, which keeps parsing deterministic.
 
 ### 5. Auto-Detect vs Manual for Key Settings
 Several settings support dual modes:

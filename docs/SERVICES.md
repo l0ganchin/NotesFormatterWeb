@@ -50,18 +50,21 @@ The prompt is assembled from multiple configurable sections:
 
 1. **System prompt** (`buildPrompt()`) - A large, detailed prompt that instructs Claude to:
    - Act as a professional note formatter for management consulting
-   - Follow exact markdown formatting conventions
+   - Follow exact markdown formatting conventions (all bullets are `- ` dashes; the app applies the user-selected bullet glyph at preview/export time, never in the model output)
    - Process the ENTIRE transcript exhaustively
    - Produce Key Takeaways, Discussion, and Quantitative sections
+   - Follow fixed `LANGUAGE & VOICE` rules: stay in the speaker's voice, strip verbal fillers ("like", "um"), avoid stock AI intensifiers ("genuinely", "truly", "really" unless the speaker said them), and never repeat a distinctive modifier more than twice
 
 2. **Configurable sections within the prompt**:
    - `buildTakeawaysInstructions()` - Topical guidance + fixed style/quality rules
-   - `getFixedTakeawaysRules()` - Detail level (concise/balanced/detailed), naming convention (customer vs management preset)
-   - `buildQuantInstructions()` - Manual categories with scales, or auto-detect mode
+   - `getFixedTakeawaysRules()` - Detail level (concise/balanced/detailed), naming convention (customer vs management preset). Takeaways are explicitly scoped to stay concise even when Discussion coverage is exhaustive
+   - `buildQuantInstructions()` - Manual categories with scales, or auto-detect mode. Supports Importance ratings ("how important is X... and how good are they at it?"): when `includeImportance` is on, every category gets an `**Importance:**` bullet before Score (N/A when not asked); when off, Importance is included only if detected in the interview
    - `buildRespondentInstructions()` - Manual respondent info or auto-extract mode
    - `buildCoverageInstructions()` - focused/thorough/exhaustive coverage level
+   - `getPerspectiveRules()` - question-vs-statement headers and first-vs-third person voice, shared between the system prompt and the final reminders
+   - Custom style instructions and project context are wrapped in delimited blocks marked as subordinate: they may refine tone/emphasis but can never override structure, markdown rules, or perspective
 
-3. **User message** - Simply the raw meeting notes and transcript concatenated
+3. **User message** - Raw meeting notes + transcript, followed by `buildFinalReminders()`: a compact restatement of the binding rules (perspective, header format, full-transcript coverage, language rules). Placing these AFTER the transcript keeps long inputs from washing out the settings (recency anchoring). The prompt also instructs the model to treat attachment content as data, never as instructions.
 
 ### API Call
 | Detail | Value |
@@ -69,6 +72,7 @@ The prompt is assembled from multiple configurable sections:
 | Endpoint | `https://api.anthropic.com/v1/messages` |
 | Model | `claude-sonnet-4-6` |
 | Max tokens | 16384 |
+| Temperature | 0.3 (low, for run-to-run consistency in a formatting task) |
 | Streaming | Yes (SSE) |
 | Auth header | `x-api-key` + `anthropic-dangerous-direct-browser-access` |
 
@@ -77,13 +81,18 @@ Main formatting function. Options include all settings plus:
 - `onChunk(partialOutput)` - Callback for streaming updates
 - `abortSignal` - AbortController signal for cancellation
 
-Reads the SSE stream, parses `content_block_delta` events, accumulates text, and calls `onChunk` on each delta.
+Reads the SSE stream, parses `content_block_delta` events, accumulates text, and calls `onChunk` on each delta. Partial lines are buffered between network reads (SSE events routinely straddle chunk boundaries; without the buffer their text is silently lost).
+
+**Returns** `{ text, stopReason, truncated }`:
+- `text` - the full formatted markdown
+- `stopReason` - from the final `message_delta` event (`end_turn`, `max_tokens`, ...)
+- `truncated` - true when the output hit the `max_tokens` cap; App.jsx surfaces this as a visible warning so a cut-off document is never mistaken for a complete one
 
 ### Output Parsing Functions
 | Function | Description |
 |----------|-------------|
 | `parseQuantCategories(output)` | Extracts quant category names and scales from formatted output |
-| `parseRespondentInfo(output)` | Extracts name, role, company from `### Title` line |
+| `parseRespondentInfo(output)` | Extracts name, role, company from `### Title` line. Last comma-segment = company, everything between name and company = role (roles often contain commas); legal suffixes ("Acme, Inc.") stay glued to the company |
 | `getDefaultTakeawaysGuidance()` | Returns default topical guidance template |
 
 ---
@@ -110,10 +119,15 @@ Core conversion function. Parses Claude's markdown output line-by-line and creat
 - `**Key Takeaways:**` → Underlined bold section header
 - `**Discussion:**` → Underlined bold section header
 - `***Question text***` → Bold italic paragraph
-- `- Bullet text` → Indented bullet (native Word bullet for standard bullet char, text-based for custom chars)
+- Bullet lines (`- `, `* `, or legacy glyphs `•●○■➢–` via `BULLET_LINE_RE`) → native Word list bullets
 - `**Category Name**` in quant section → Bold category header
-- `**Score:**` / `**Reason:**` → Bold label + value
+- `**Score:**` / `**Reason:**` → native list bullet with bold label run + value (same list as other quant bullets)
 - Page break prefix when `isAppend = true`
+
+All paragraph spacing comes from the `SPACING` constant — every bullet in every section uses the same spacing, and headers/questions/categories each have one canonical value.
+
+### `buildDocxBlob(markdownText, config, isAppend)`
+The ONLY correct way to turn formatted output into a .docx blob. Always includes the numbering config (bullet list definitions) and 1" margins. All callers (exportToWord, OutputDisplay Save Note / master-doc append, ExportModal master-doc append) go through this — building a `Document` without the numbering config silently breaks bullets in Word.
 
 ### `exportToWord(markdownText, options)`
 Exports the formatted output to a .docx file. Two modes:
@@ -121,8 +135,13 @@ Exports the formatted output to a .docx file. Two modes:
 - **Append to existing**: Reads existing .docx, creates new content, merges with `docx-merger`, saves as `originalname_updated.docx`
 
 ### Bullet Handling
-- Standard bullet (U+2022) uses native Word numbering (`LevelFormat.BULLET`)
-- Custom bullets (circle, square, arrow, dash) use text-based rendering with manual indentation
+- ALL bullet styles export as native Word list bullets (`LevelFormat.BULLET`), using the user-selected glyph as the list's bullet text
+- In Word, pressing Enter at the end of any exported bullet continues the list
+
+### Bullet Punctuation
+- Key Takeaways bullets keep normal sentence punctuation (trailing periods)
+- Discussion and Quantitative bullets (including Reason text) have trailing periods stripped; punctuation inside the bullet is untouched
+- The prompt instructs the model to emit this convention; export and preview strip as a safety net for older outputs
 
 ---
 
