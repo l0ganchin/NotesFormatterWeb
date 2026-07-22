@@ -12,6 +12,7 @@ import ProjectSelector from './components/ProjectSelector'
 import ProjectFiles from './components/ProjectFiles'
 import ProjectSharing from './components/ProjectSharing'
 import HowToGuide from './components/HowToGuide'
+import WhatsNew, { WHATS_NEW_VERSION } from './components/WhatsNew'
 import { formatNotes, getDefaultTakeawaysGuidance, parseQuantCategories, parseRespondentInfo } from './services/claude'
 import { exportToWord, DEFAULT_CONFIG } from './services/export'
 import { updateProject } from './services/firebase'
@@ -19,6 +20,7 @@ import logo from './assets/logo.png'
 import './App.css'
 
 const PANEL_WIDTH_STORAGE_KEY = 'notes-formatter-panel-width'
+const WHATS_NEW_STORAGE_KEY = 'notes-formatter-whats-new-seen'
 
 
 function AppContent() {
@@ -58,6 +60,24 @@ function AppContent() {
 
   // How-to-use guide modal state
   const [helpOpen, setHelpOpen] = useState(false)
+
+  // What's New popup: shows once per browser per release version
+  const [whatsNewOpen, setWhatsNewOpen] = useState(() => {
+    try {
+      return localStorage.getItem(WHATS_NEW_STORAGE_KEY) !== WHATS_NEW_VERSION
+    } catch {
+      return false
+    }
+  })
+
+  const dismissWhatsNew = () => {
+    setWhatsNewOpen(false)
+    try {
+      localStorage.setItem(WHATS_NEW_STORAGE_KEY, WHATS_NEW_VERSION)
+    } catch {
+      // Storage unavailable (private mode) — the popup just shows again next visit
+    }
+  }
 
   // Project files panel - starts open when a project is active
   const [projectFilesOpen, setProjectFilesOpen] = useState(true)
@@ -522,6 +542,15 @@ function AppContent() {
       <HowToGuide
         isOpen={helpOpen}
         onClose={() => setHelpOpen(false)}
+      />
+
+      <WhatsNew
+        isOpen={whatsNewOpen}
+        onClose={dismissWhatsNew}
+        onOpenGuide={() => {
+          dismissWhatsNew()
+          setHelpOpen(true)
+        }}
       />
     </div>
   )

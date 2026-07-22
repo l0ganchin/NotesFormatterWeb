@@ -149,6 +149,26 @@ Collapsible section for configuring Key Takeaways topical guidance.
 
 ---
 
+## `src/components/WhatsNew.jsx`
+
+### Responsibility
+One-time "What's New" release popup. Shows automatically once per browser per release version, then never again until the version is bumped.
+
+### Props
+| Prop | Type | Description |
+|------|------|-------------|
+| isOpen | boolean | Whether the popup is shown |
+| onClose | function | Dismisses and marks the version as seen |
+| onOpenGuide | function | Dismisses and opens the HowToGuide modal |
+
+### Behavior
+- Exports `WHATS_NEW_VERSION`; App.jsx compares it against localStorage key `notes-formatter-whats-new-seen` on load and shows the popup on mismatch
+- Every dismissal path (Got it, backdrop, Escape) stamps the version so it never re-shows
+- **To announce a future release**: update the bullet list content AND bump `WHATS_NEW_VERSION`
+- Storage failures (private browsing) are tolerated — the popup may just show again next visit
+
+---
+
 ## `src/components/QuantSettings.jsx`
 
 ### Responsibility

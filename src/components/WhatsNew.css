@@ -1,0 +1,155 @@
+.whatsnew-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+  animation: whatsnew-fade-in 0.18s ease-out;
+}
+
+.whatsnew-modal {
+  background: var(--bg-3);
+  border: 1px solid rgba(232, 65, 42, 0.35);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.55),
+    0 0 40px rgba(232, 65, 42, 0.18);
+  animation: whatsnew-slide-up 0.32s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@keyframes whatsnew-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes whatsnew-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.whatsnew-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.95rem 1.25rem;
+  background: linear-gradient(135deg, #e8412a 0%, #a3271a 100%);
+  flex-shrink: 0;
+}
+
+.whatsnew-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.whatsnew-spark {
+  font-size: 1rem;
+}
+
+.whatsnew-date {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.16);
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.whatsnew-content {
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.whatsnew-content ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.whatsnew-content li {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 0.55rem 0.75rem;
+}
+
+.whatsnew-content strong {
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.whatsnew-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg-2);
+  flex-shrink: 0;
+}
+
+.whatsnew-guide-btn {
+  padding: 0.45rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  color: var(--text-3);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.whatsnew-guide-btn:hover {
+  color: var(--text-1);
+  border-color: #666;
+}
+
+.whatsnew-dismiss-btn {
+  padding: 0.45rem 1.3rem;
+  background: var(--accent);
+  border: none;
+  border-radius: 5px;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.whatsnew-dismiss-btn:hover {
+  background: var(--accent-hover);
+}
+
+.whatsnew-dismiss-btn:active {
+  transform: scale(0.97);
+}
