@@ -4,16 +4,16 @@
   flex-direction: column;
   overflow: hidden;
   padding: 1.5rem 3rem;
-  background: #242424;
+  background: var(--frame);
   max-width: 1600px;
   margin: 0 auto;
 }
 
 .app-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #333;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  background: #0d0d0d;
+  background: var(--bg-1);
   border-radius: 8px 8px 0 0;
   display: flex;
   justify-content: space-between;
@@ -33,12 +33,12 @@
 }
 
 .header-logo {
-  height: 48px;
+  height: 36px;
   width: auto;
 }
 
 .app-header h1 {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   margin: 0;
 }
 
@@ -46,9 +46,9 @@
   display: flex;
   flex: 1;
   overflow: hidden;
-  background: #0d0d0d;
+  background: var(--bg-1);
   border-radius: 0 0 8px 8px;
-  border: 1px solid #333;
+  border: 1px solid var(--border);
   border-top: none;
   min-height: 0;
 }
@@ -63,7 +63,7 @@
   gap: 0.75rem;
   padding: 1rem;
   overflow-y: auto;
-  background: #0a0a0a;
+  background: var(--bg-0);
   min-width: 0;
   height: 100%;
   min-height: 0;
@@ -78,7 +78,7 @@
 
 .panel-resizer {
   width: 8px;
-  background: #1a1a1a;
+  background: var(--bg-3);
   cursor: col-resize;
   display: flex;
   align-items: center;
@@ -94,13 +94,13 @@
 .resizer-handle {
   width: 4px;
   height: 40px;
-  background: #444;
+  background: var(--bg-6);
   border-radius: 2px;
   transition: background-color 0.2s;
 }
 
 .panel-resizer:hover .resizer-handle {
-  background: #E8412A;
+  background: var(--accent);
 }
 
 .error-message {
@@ -110,6 +110,7 @@
   border-radius: 4px;
   color: #ff6b6b;
   font-size: 0.8rem;
+  animation: fade-in 0.2s ease-out;
 }
 
 .warning-message {
@@ -119,11 +120,12 @@
   border-radius: 4px;
   color: #d4a017;
   font-size: 0.8rem;
+  animation: fade-in 0.2s ease-out;
 }
 
 .format-btn {
   padding: 0.6rem 1.5rem;
-  background: #E8412A;
+  background: var(--accent);
   border: none;
   border-radius: 6px;
   color: white;
@@ -135,7 +137,7 @@
 }
 
 .format-btn:hover:not(:disabled) {
-  background: #c9361f;
+  background: var(--accent-hover);
 }
 
 .format-btn:disabled {
@@ -184,7 +186,7 @@
 
   .input-panel {
     width: 100% !important;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border);
     overflow: visible;
   }
 

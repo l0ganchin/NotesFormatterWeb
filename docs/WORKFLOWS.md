@@ -44,8 +44,8 @@
 3. User clicks "Export"
 4. `exportToWord()` called with `mode: 'append'`
 5. Existing file read as ArrayBuffer
-6. New content created with page break prefix
-7. `DocxMerger` merges existing + new
+6. New content built normally (native Word list bullets)
+7. `mergeDocxBlobs()` injects the content after one page break, remapping the note's list IDs so its bullets stay live; the existing document's styles/lists/ToC are untouched
 8. Downloads as `originalname_updated.docx`
 
 ### Append to Master Document (Project Mode)

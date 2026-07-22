@@ -108,12 +108,10 @@ export async function appendToMasterDoc(projectId, masterDocId, noteDocxBlob, us
   const existingArrayBuffer = await existingBlob.arrayBuffer()
   const noteArrayBuffer = await noteDocxBlob.arrayBuffer()
 
-  // Merge documents using docx-merger
-  const DocxMerger = (await import('docx-merger')).default
-  const merger = new DocxMerger({}, [existingArrayBuffer, noteArrayBuffer])
-  const mergedBlob = await new Promise((resolve) => {
-    merger.save('blob', (data) => resolve(data))
-  })
+  // Inject the note into the master; the merge remaps the note's list IDs so
+  // its bullets stay live without touching the master's own definitions
+  const { mergeDocxBlobs } = await import('./docxMerge')
+  const mergedBlob = await mergeDocxBlobs(existingArrayBuffer, noteArrayBuffer)
 
   // Upload merged file back to Storage (overwrite)
   await uploadBytes(existingRef, mergedBlob)

@@ -64,6 +64,11 @@ function AppContent() {
   const mainRef = useRef(null)
   const abortControllerRef = useRef(null)
 
+  // Streaming throttle: chunks arrive in uneven bursts, so UI updates are
+  // flushed on a steady 100ms cadence to keep the output from feeling jumpy
+  const pendingOutputRef = useRef('')
+  const flushTimerRef = useRef(null)
+
   // Load project settings when project changes
   useEffect(() => {
     if (currentProject) {
@@ -156,7 +161,13 @@ function AppContent() {
         customStyleInstructions,
         projectContext,
         onChunk: (partialOutput) => {
-          setOutput(partialOutput)
+          pendingOutputRef.current = partialOutput
+          if (!flushTimerRef.current) {
+            flushTimerRef.current = setTimeout(() => {
+              flushTimerRef.current = null
+              setOutput(pendingOutputRef.current)
+            }, 100)
+          }
         },
         abortSignal: abortControllerRef.current.signal,
       })
@@ -191,6 +202,12 @@ function AppContent() {
         setError(err.message || 'Failed to format notes')
       }
     } finally {
+      // Drop any pending throttled flush so it can't fire after completion,
+      // an error, or a reset (the success path sets the full text itself)
+      if (flushTimerRef.current) {
+        clearTimeout(flushTimerRef.current)
+        flushTimerRef.current = null
+      }
       setIsLoading(false)
       abortControllerRef.current = null
     }

@@ -66,6 +66,8 @@ The prompt is assembled from multiple configurable sections:
 
 3. **User message** - Raw meeting notes + transcript, followed by `buildFinalReminders()`: a compact restatement of the binding rules (perspective, header format, full-transcript coverage, language rules). Placing these AFTER the transcript keeps long inputs from washing out the settings (recency anchoring). The prompt also instructs the model to treat attachment content as data, never as instructions.
 
+**Meeting notes are strictly additive**: they signal emphasis (topics in both notes and transcript get prominence), notes-only content must still be worked into the output, and the notes can never narrow transcript coverage — the transcript is formatted exactly as completely as if no notes were provided.
+
 ### API Call
 | Detail | Value |
 |--------|-------|
@@ -132,7 +134,14 @@ The ONLY correct way to turn formatted output into a .docx blob. Always includes
 ### `exportToWord(markdownText, options)`
 Exports the formatted output to a .docx file. Two modes:
 - **New document**: Creates fresh .docx, saves as `Name_Role_Company_Notes_YYYY-MM-DD.docx`
-- **Append to existing**: Reads existing .docx, creates new content, merges with `docx-merger`, saves as `originalname_updated.docx`
+- **Append to existing**: Reads existing .docx, builds merge-compatible content, injects it via `mergeDocxBlobs()`, saves as `originalname_updated.docx`
+
+### `mergeDocxBlobs(existingArrayBuffer, appendArrayBuffer)` (src/services/docxMerge.js)
+Appends generated content into an existing .docx by unzipping it (JSZip) and inserting the new body XML just before the document's closing section properties, preceded by exactly one page break — so the appended text starts on the page after the existing text with no blank page between.
+
+**Bullets stay live Word lists on both sides.** The merge copies the appended document's list definitions into the target's `numbering.xml` under fresh IDs guaranteed not to collide (max existing ID + 1), rewrites the appended body's `numId` references to match, and leaves the target's own definitions byte-for-byte untouched. If the target has no numbering part at all, the appended document's part is installed and wired in (content-type override + relationship).
+
+This replaced `docx-merger`, which renamed merged list definitions WITHOUT updating the paragraphs referencing them — every bullet in a merged document pointed at a missing list and Word "repaired" them into one running numbered list.
 
 ### Bullet Handling
 - ALL bullet styles export as native Word list bullets (`LevelFormat.BULLET`), using the user-selected glyph as the list's bullet text
@@ -154,7 +163,7 @@ File CRUD operations combining Firebase Storage (for file blobs) and Firestore (
 | `uploadTranscript(projectId, file, metadata)` | Uploads .docx to Storage, creates Firestore metadata in `transcripts` subcollection |
 | `uploadFormattedNote(projectId, docxBlob, metadata)` | Uploads formatted note .docx, creates metadata in `formattedNotes` subcollection |
 | `createMasterDoc(projectId, name, initialDocxBlob, metadata)` | Creates new master doc in Storage + `masterDocs` subcollection |
-| `appendToMasterDoc(projectId, masterDocId, noteDocxBlob, userId)` | Downloads existing master doc, merges with new note using `docx-merger`, re-uploads, updates metadata |
+| `appendToMasterDoc(projectId, masterDocId, noteDocxBlob, userId)` | Downloads existing master doc, injects the note via `mergeDocxBlobs()` (export.js), re-uploads, updates metadata |
 | `downloadFile(storagePath)` | Gets download URL via `getDownloadURL()`, fetches blob via `fetch()` |
 | `deleteFile(projectId, subcollection, docId)` | Deletes Storage blob + Firestore metadata |
 | `getProjectFiles(projectId, subcollection)` | Lists all files in subcollection, ordered by createdAt desc |
@@ -169,8 +178,8 @@ projects/{projectId}/masterDocs/{masterDocId}.docx
 
 ### Master Doc Append Flow
 1. Fetch existing master doc: `getDownloadURL()` → `fetch()` → `arrayBuffer()`
-2. Convert new note to `arrayBuffer()`
-3. Merge with `DocxMerger` (existing first, then new)
+2. Convert new note to `arrayBuffer()` (note must be built merge-compatible)
+3. Inject via `mergeDocxBlobs()` — master's own styles/lists untouched, one page break before the note
 4. Upload merged blob back to same Storage path (overwrite)
 5. Update Firestore metadata (appendCount, fileSizeBytes, updatedAt)
 

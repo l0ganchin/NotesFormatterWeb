@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import FormattedPreview from './FormattedPreview'
 import { uploadFormattedNote, getProjectFiles, appendToMasterDoc, createMasterDoc } from '../services/fileStorage'
 import { buildDocxBlob, DEFAULT_CONFIG } from '../services/export'
@@ -36,6 +36,12 @@ export default function OutputDisplay({
   const [messageIndex, setMessageIndex] = useState(0)
   const [savingNote, setSavingNote] = useState(false)
   const [savedNote, setSavedNote] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  // Auto-scroll: follow the stream only while the user is at (or near) the
+  // bottom of the output; scrolling up to read releases the pin
+  const contentRef = useRef(null)
+  const pinnedToBottomRef = useRef(true)
 
   // Master doc picker state
   const [showMasterPicker, setShowMasterPicker] = useState(false)
@@ -81,7 +87,37 @@ export default function OutputDisplay({
     setSelectedMasterId(null)
     setShowCreateMaster(false)
     setNewMasterName('')
+    setCopied(false)
   }, [content])
+
+  // Re-pin to bottom at the start of each new run
+  useEffect(() => {
+    if (isLoading && !content) {
+      pinnedToBottomRef.current = true
+    }
+  }, [isLoading, content])
+
+  // Follow the stream while pinned
+  useEffect(() => {
+    if (!isLoading) return
+    const el = contentRef.current
+    if (el && pinnedToBottomRef.current) {
+      el.scrollTop = el.scrollHeight
+    }
+  }, [content, isLoading])
+
+  const handleScroll = () => {
+    const el = contentRef.current
+    if (!el) return
+    pinnedToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  }
+
+  const handleCopy = () => {
+    if (!content) return
+    navigator.clipboard.writeText(content)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60)
@@ -100,7 +136,7 @@ export default function OutputDisplay({
   })
 
   const buildNoteBlob = async () => {
-    return buildDocxBlob(content, exportConfig(), true)
+    return buildDocxBlob(content, exportConfig())
   }
 
   const handleShowMasterPicker = async () => {
@@ -185,101 +221,93 @@ export default function OutputDisplay({
     }
   }
 
-  if (isLoading && !content) {
-    // Show spinner only when no content has arrived yet
-    return (
-      <div className="output-display">
-        <div className="output-header">
-          <h2>Formatted Output</h2>
-        </div>
-        <div className="output-content loading">
-          <div className="spinner"></div>
-          <div className="loading-info">
-            <p className="loading-status">{LOADING_MESSAGES[messageIndex]}</p>
-            <p className="loading-timer">{formatTime(elapsedSeconds)} elapsed</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const showEmpty = !isLoading && !content
+  const showSkeleton = isLoading && !content
 
-  if (isLoading && content) {
-    // Show streaming content with loading indicator
-    return (
-      <div className="output-display">
-        <div className="output-header">
-          <h2>Formatted Output</h2>
-          <div className="streaming-indicator">
-            <div className="spinner-small"></div>
-            <span>{formatTime(elapsedSeconds)}</span>
-          </div>
-        </div>
-        <div className="output-content preview-mode streaming">
-          <FormattedPreview content={content} takeawayBullet={takeawayBullet} discussionBullet={discussionBullet} />
-        </div>
-      </div>
-    )
-  }
-
-  if (!content) {
-    return (
-      <div className="output-display">
-        <div className="output-header">
-          <h2>Formatted Output</h2>
-        </div>
-        <div className="output-content empty">
-          <p>Formatted notes will appear here</p>
-        </div>
-      </div>
-    )
-  }
-
+  // One stable layout across empty / waiting / streaming / done states, so
+  // the chrome never jumps when streaming starts or finishes
   return (
     <div className="output-display">
       <div className="output-header">
         <h2>Formatted Output</h2>
         <div className="output-actions">
+          {isLoading && (
+            <div className="streaming-indicator">
+              <div className="spinner-small"></div>
+              <span className="streaming-timer">{formatTime(elapsedSeconds)}</span>
+            </div>
+          )}
           <div className="view-toggle">
             <button
               className={`toggle-btn ${viewMode === 'preview' ? 'active' : ''}`}
               onClick={() => setViewMode('preview')}
+              disabled={!content}
             >
               Preview
             </button>
             <button
               className={`toggle-btn ${viewMode === 'raw' ? 'active' : ''}`}
               onClick={() => setViewMode('raw')}
+              disabled={!content}
             >
               Raw
             </button>
           </div>
           <button
-            className="copy-btn"
-            onClick={() => navigator.clipboard.writeText(content)}
+            className={`copy-btn ${copied ? 'copied' : ''}`}
+            onClick={handleCopy}
+            disabled={!content}
           >
-            Copy
+            {copied ? 'Copied ✓' : 'Copy'}
           </button>
           <button
             className="export-btn"
             onClick={onExportWord}
+            disabled={!content || isLoading}
           >
             Export .docx
           </button>
         </div>
       </div>
-      {viewMode === 'preview' && (
+
+      {isLoading && <div className="streaming-progress" />}
+
+      {viewMode === 'preview' && content && (
         <p className="preview-disclaimer">This is a preview and may contain errors. Export for final formatting.</p>
       )}
-      <div className={`output-content ${viewMode === 'preview' ? 'preview-mode' : ''}`}>
-        {viewMode === 'preview' ? (
-          <FormattedPreview content={content} takeawayBullet={takeawayBullet} discussionBullet={discussionBullet} />
-        ) : (
-          <pre>{content}</pre>
+
+      <div
+        className={`output-content ${viewMode === 'preview' && content ? 'preview-mode' : ''} ${showEmpty ? 'empty' : ''}`}
+        ref={contentRef}
+        onScroll={handleScroll}
+      >
+        {showEmpty && <p>Formatted notes will appear here</p>}
+        {showSkeleton && (
+          <div className="output-skeleton">
+            <div className="skeleton-line skeleton-title"></div>
+            <div className="skeleton-line w-90"></div>
+            <div className="skeleton-line w-75"></div>
+            <div className="skeleton-line w-85"></div>
+            <div className="skeleton-line w-60"></div>
+            <p className="loading-status" key={messageIndex}>{LOADING_MESSAGES[messageIndex]}</p>
+          </div>
+        )}
+        {content && (
+          viewMode === 'preview' ? (
+            <FormattedPreview
+              content={content}
+              takeawayBullet={takeawayBullet}
+              discussionBullet={discussionBullet}
+              isStreaming={isLoading}
+            />
+          ) : (
+            <pre>{content}</pre>
+          )
         )}
       </div>
 
       {/* Save to Project actions */}
-      {currentProject && user && (
+      {content && !isLoading && currentProject && user && (
         <div className="save-to-project-bar">
           <button
             className={`save-project-btn ${savedNote ? 'saved' : ''}`}

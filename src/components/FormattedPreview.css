@@ -1,12 +1,36 @@
 .formatted-preview {
   font-family: 'Open Sans', 'Calibri', sans-serif;
   font-size: 11pt;
-  line-height: 1.5;
-  color: #e0e0e0;
-  background: #1a1a1a;
+  line-height: 1.6;
+  color: var(--text-1);
+  background: var(--bg-3);
   padding: 1in;
   min-height: 200px;
   border-radius: 4px;
+}
+
+/* Incomplete last line during streaming: dimmed, uncommitted styling */
+.preview-streaming-tail {
+  font-family: 'Open Sans', 'Calibri', sans-serif;
+  font-size: 11pt;
+  margin: 4pt 0;
+  color: var(--text-3);
+}
+
+.streaming-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  background: var(--accent);
+  vertical-align: text-bottom;
+  animation: caret-blink 1s steps(2, start) infinite;
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
 }
 
 .preview-title {

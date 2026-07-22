@@ -2,7 +2,6 @@ import {
   Document,
   Paragraph,
   TextRun,
-  PageBreak,
   HeadingLevel,
   convertInchesToTwip,
   LevelFormat,
@@ -10,7 +9,7 @@ import {
   Packer,
 } from 'docx'
 import { saveAs } from 'file-saver'
-import DocxMerger from 'docx-merger'
+import { mergeDocxBlobs } from './docxMerge'
 
 // Default configuration matching the Python script
 const DEFAULT_CONFIG = {
@@ -144,16 +143,8 @@ function createQuantLabelBulletParagraph(label, value, style) {
   })
 }
 
-export function parseMarkdownToDocx(markdownText, config = DEFAULT_CONFIG, isAppend = false) {
+export function parseMarkdownToDocx(markdownText, config = DEFAULT_CONFIG) {
   const paragraphs = []
-
-  if (isAppend) {
-    paragraphs.push(
-      new Paragraph({
-        children: [new PageBreak()],
-      })
-    )
-  }
 
   const lines = markdownText.trim().split('\n')
   let currentSection = null
@@ -359,8 +350,10 @@ function sanitizeFilename(str) {
 // way to turn output into a document: it always includes the numbering config
 // (without it, bullet paragraphs reference lists that don't exist and Word does
 // not render them as bullets) and standard 1" margins.
-export async function buildDocxBlob(markdownText, config = DEFAULT_CONFIG, isAppend = false) {
-  const paragraphs = parseMarkdownToDocx(markdownText, config, isAppend)
+// Blobs destined for a merge need no special handling — mergeDocxBlobs remaps
+// list IDs so appended bullets stay live without touching the target's lists.
+export async function buildDocxBlob(markdownText, config = DEFAULT_CONFIG) {
+  const paragraphs = parseMarkdownToDocx(markdownText, config)
   const doc = new Document({
     numbering: {
       config: createNumberingConfig(config),
@@ -389,18 +382,13 @@ export async function exportToWord(markdownText, options = {}) {
   const { mode = 'new', existingFile = null, config = DEFAULT_CONFIG, respondentInfo = {} } = options
 
   if (mode === 'append' && existingFile) {
-    // Read existing file and merge
+    // Read existing file and inject the new content into it
     const existingArrayBuffer = await existingFile.arrayBuffer()
 
-    // Create new document content (isAppend = true adds a leading page break)
-    const newBlob = await buildDocxBlob(markdownText, config, true)
+    const newBlob = await buildDocxBlob(markdownText, config)
     const newArrayBuffer = await newBlob.arrayBuffer()
 
-    // Merge documents
-    const merger = new DocxMerger({}, [existingArrayBuffer, newArrayBuffer])
-    const mergedBlob = await new Promise((resolve) => {
-      merger.save('blob', (data) => resolve(data))
-    })
+    const mergedBlob = await mergeDocxBlobs(existingArrayBuffer, newArrayBuffer)
 
     // Use original filename with _updated suffix
     const originalName = existingFile.name.replace('.docx', '')

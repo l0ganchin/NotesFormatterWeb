@@ -98,7 +98,7 @@ export default function ExportModal({
       discussion_bullet: { ...DEFAULT_CONFIG.discussion_bullet, bullet: discussionBullet || '\u2022' },
       quant_bullet: { ...DEFAULT_CONFIG.quant_bullet, bullet: discussionBullet || '\u2022' },
     }
-    return buildDocxBlob(output, config, true)
+    return buildDocxBlob(output, config)
   }
 
   const handleAppendToMaster = async () => {

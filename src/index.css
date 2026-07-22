@@ -10,6 +10,25 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Design tokens: single source of truth for the palette.
+     Component CSS should reference these instead of raw hex values. */
+  --bg-0: #0a0a0a;
+  --bg-1: #0d0d0d;
+  --bg-2: #151515;
+  --bg-3: #1a1a1a;
+  --bg-4: #222222;
+  --bg-5: #333333;
+  --bg-6: #444444;
+  --frame: #242424;
+  --border: #333333;
+  --border-strong: #444444;
+  --text-1: #e0e0e0;
+  --text-2: #cccccc;
+  --text-3: #888888;
+  --text-4: #666666;
+  --accent: #E8412A;
+  --accent-hover: #c9361f;
 }
 
 * {
@@ -21,4 +40,76 @@
 body {
   min-width: 320px;
   min-height: 100vh;
+}
+
+/* --- Scrollbars: thin, rounded, unobtrusive on the dark theme --- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a3a transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4d4d4d;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* --- Keyboard focus: visible rings without affecting mouse clicks --- */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* --- Shared animations --- */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes panel-expand {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Collapsible settings panels ease open instead of snapping */
+.prompt-settings-content,
+.quant-settings-content,
+.format-style-settings-content {
+  animation: panel-expand 0.16s ease-out;
+}
+
+/* --- Accessibility: honor reduced-motion preference --- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

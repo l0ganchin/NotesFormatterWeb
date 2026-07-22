@@ -205,13 +205,16 @@ Displays formatted output with preview/raw toggle, streaming indicator, and post
 | notes | string | (unused currently, passed for future use) |
 
 ### Display States
-1. **Loading, no content**: Spinner + rotating status messages + elapsed timer
-2. **Loading, with content (streaming)**: Shows preview + small spinner + timer, red bottom border
+One stable layout across all states (header with toggle/Copy/Export always rendered; buttons disabled when not applicable) so the chrome never jumps when streaming starts or ends:
+1. **Loading, no content**: Shimmering skeleton lines + rotating status messages (crossfade); spinner + tabular-nums timer in the header
+2. **Loading, with content (streaming)**: Preview with `isStreaming` (incomplete tail line held back, rendered dimmed with a blinking caret); animated shimmer bar under the header; auto-scroll follows the stream only while the user is pinned to the bottom
 3. **Empty**: "Formatted notes will appear here"
-4. **Content ready**: Preview/Raw toggle, Copy button, Export .docx button, save-to-project bar
+4. **Content ready**: Preview/Raw toggle, Copy button (shows "Copied ✓" feedback), Export .docx button, save-to-project bar
+
+Streaming UI updates are throttled to a 100ms cadence in App.jsx (`onChunk` buffers into a ref, flushed on a timer) so bursts of chunks render smoothly.
 
 ### Post-Formatting Actions (project mode only)
-1. **Save Note**: Converts output to .docx via `parseMarkdownToDocx()` + `Packer.toBlob()`, uploads via `uploadFormattedNote()`. Filename: `Name_Role_Company_Notes_YYYY-MM-DD.docx`
+1. **Save Note**: Converts output to .docx via `buildDocxBlob()`, uploads via `uploadFormattedNote()`. Filename: `Name_Role_Company_Notes_YYYY-MM-DD.docx`
 2. **Append to Master Doc**: Opens inline picker that:
    - Loads existing master docs from `getProjectFiles(projectId, 'masterDocs')`
    - If master docs exist: shows list to select + "Append" button + "+ New Master Doc" button

@@ -28,7 +28,7 @@ The formatted output can be exported as `.docx` Word documents, saved to cloud-b
 | Database | Cloud Firestore |
 | File Storage | Firebase Storage |
 | Doc Generation | `docx` library (Word .docx creation) |
-| Doc Merging | `docx-merger` (append documents) |
+| Doc Merging | Custom JSZip merge with list-ID remapping (`mergeDocxBlobs` in docxMerge.js) |
 | File Reading | `mammoth` (extract text from .docx uploads) |
 | File Download | `file-saver` (browser saveAs) |
 

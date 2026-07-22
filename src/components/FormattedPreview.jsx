@@ -164,12 +164,37 @@ function parseMarkdownToElements(markdown, takeawayBullet = '\u2022', discussion
   return elements
 }
 
-export default function FormattedPreview({ content, takeawayBullet = '\u2022', discussionBullet = '\u2022' }) {
-  const elements = parseMarkdownToElements(content, takeawayBullet, discussionBullet)
+export default function FormattedPreview({ content, takeawayBullet = '\u2022', discussionBullet = '\u2022', isStreaming = false }) {
+  // While streaming, hold back the incomplete last line. Rendering it live
+  // makes it flip styles as markdown markers arrive (plain text becomes a
+  // bold-italic question the moment the closing *** lands), which reads as
+  // flicker. The tail renders as dimmed plain text with a caret until its
+  // newline arrives and it commits to its real style.
+  let stableContent = content
+  let tail = ''
+  if (isStreaming && content) {
+    const lastNewline = content.lastIndexOf('\n')
+    if (lastNewline === -1) {
+      stableContent = ''
+      tail = content
+    } else {
+      stableContent = content.slice(0, lastNewline)
+      tail = content.slice(lastNewline + 1)
+    }
+  }
+
+  const elements = parseMarkdownToElements(stableContent, takeawayBullet, discussionBullet)
+  const tailText = tail.replace(/[*#_]/g, '').replace(/^-\s*/, '').trim()
 
   return (
     <div className="formatted-preview">
       {elements}
+      {isStreaming && (
+        <p className="preview-streaming-tail">
+          {tailText}
+          <span className="streaming-caret" />
+        </p>
+      )}
     </div>
   )
 }
