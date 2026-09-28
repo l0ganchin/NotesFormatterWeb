@@ -1,15 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { getDefaultTakeawaysGuidance } from '../services/claude'
+import { MANAGEMENT_TAKEAWAYS_GUIDANCE } from '../services/presets'
 import './PromptSettings.css'
 
 const EXAMPLE_GUIDANCE = {
-  // Customer template is the app default — single source of truth in claude.js
+  // Customer template's single source of truth is claude.js; the management
+  // template's is presets.js (it also seeds the Management preset)
   customer: getDefaultTakeawaysGuidance(),
-  management: `- [Their domain/role and perspective on company trajectory]
-- [Key operational insights from their area]
-- [Strategic challenges or opportunities they see]
-- [Growth initiatives or investment priorities]
-- [Optional fifth bullet for additional context or caveats]`,
+  management: MANAGEMENT_TAKEAWAYS_GUIDANCE,
 }
 
 export default function PromptSettings({

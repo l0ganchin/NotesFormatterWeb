@@ -1,0 +1,110 @@
+.preset-pill-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.preset-pills {
+  display: flex;
+  width: fit-content;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 999px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.preset-pill {
+  position: relative;
+  padding: 0.28rem 0.7rem;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  color: #888;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.preset-pill:hover {
+  color: #ccc;
+  background: #242424;
+}
+
+.preset-pill.active {
+  background: #E8412A;
+  color: white;
+}
+
+.preset-dirty-dot {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f5b942;
+}
+
+.preset-pill.active .preset-dirty-dot {
+  background: white;
+}
+
+.preset-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.preset-save-btn {
+  padding: 0.32rem 0.75rem;
+  background: #1a1a1a;
+  border: 1px solid #E8412A;
+  border-radius: 999px;
+  color: #E8412A;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.preset-save-btn:hover:not(:disabled) {
+  background: #E8412A;
+  color: white;
+}
+
+.preset-save-btn:disabled {
+  border-color: #333;
+  color: #555;
+  cursor: default;
+}
+
+.preset-save-btn.saved {
+  border-color: #3d8f4e;
+  color: #5fbf74;
+}
+
+.preset-saveas-btn {
+  padding: 0.32rem 0.75rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 999px;
+  color: #888;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.preset-saveas-btn:hover {
+  border-color: #555;
+  color: #ccc;
+}

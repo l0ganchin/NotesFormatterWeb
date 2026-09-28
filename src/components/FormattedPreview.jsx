@@ -1,3 +1,5 @@
+import { buildMetaRows, buildHeaderText } from '../services/export'
+import logo from '../assets/logo-horizontal-winterberrygroup-red.png'
 import './FormattedPreview.css'
 
 // Discussion and Quantitative bullets drop their trailing period on export;
@@ -6,12 +8,24 @@ function stripTrailingPeriod(text) {
   return text.replace(/\.\s*$/, '').trim()
 }
 
-function parseMarkdownToElements(markdown, takeawayBullet = '\u2022', discussionBullet = '\u2022') {
+// The Date / Attendees / WG Attendees block rendered under the title — built
+// from the same buildMetaRows helper the .docx export uses so they can't drift
+function buildMetaElements(noteMeta, keyOffset) {
+  return buildMetaRows(noteMeta).map(([label, value], i) => (
+    <p key={`meta-${keyOffset}-${i}`} className="preview-meta">
+      <strong>{label}</strong>
+      {value ? ` ${value}` : ''}
+    </p>
+  ))
+}
+
+function parseMarkdownToElements(markdown, takeawayBullet = '•', discussionBullet = '•', noteMeta = null) {
   if (!markdown) return []
 
   const lines = markdown.trim().split('\n')
   const elements = []
   let currentSection = null
+  let metaInserted = !noteMeta
   let key = 0
 
   for (let i = 0; i < lines.length; i++) {
@@ -28,6 +42,11 @@ function parseMarkdownToElements(markdown, takeawayBullet = '\u2022', discussion
           {titleText}
         </h3>
       )
+      if (!metaInserted) {
+        elements.push(...buildMetaElements(noteMeta, key))
+        key += 3
+        metaInserted = true
+      }
       continue
     }
 
@@ -161,10 +180,21 @@ function parseMarkdownToElements(markdown, takeawayBullet = '\u2022', discussion
     }
   }
 
+  // No title line (yet): match the export's fallback and lead with the block
+  if (!metaInserted && elements.length > 0) {
+    elements.unshift(...buildMetaElements(noteMeta, key))
+  }
+
   return elements
 }
 
-export default function FormattedPreview({ content, takeawayBullet = '\u2022', discussionBullet = '\u2022', isStreaming = false }) {
+export default function FormattedPreview({
+  content,
+  takeawayBullet = '•',
+  discussionBullet = '•',
+  isStreaming = false,
+  noteMeta = null,
+}) {
   // While streaming, hold back the incomplete last line. Rendering it live
   // makes it flip styles as markdown markers arrive (plain text becomes a
   // bold-italic question the moment the closing *** lands), which reads as
@@ -183,11 +213,17 @@ export default function FormattedPreview({ content, takeawayBullet = '\u2022', d
     }
   }
 
-  const elements = parseMarkdownToElements(stableContent, takeawayBullet, discussionBullet)
+  const elements = parseMarkdownToElements(stableContent, takeawayBullet, discussionBullet, noteMeta)
   const tailText = tail.replace(/[*#_]/g, '').replace(/^-\s*/, '').trim()
 
   return (
     <div className="formatted-preview">
+      {noteMeta && (
+        <div className="preview-doc-header">
+          <span className="preview-doc-header-text">{buildHeaderText(noteMeta)}</span>
+          <img src={logo} alt="Winterberry Group logo" className="preview-doc-header-logo" />
+        </div>
+      )}
       {elements}
       {isStreaming && (
         <p className="preview-streaming-tail">

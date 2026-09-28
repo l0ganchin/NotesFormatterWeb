@@ -1,0 +1,96 @@
+.project-metadata {
+  border: 1px solid #333;
+  border-radius: 6px;
+}
+
+.project-metadata-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: #1a1a1a;
+  border: none;
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.project-metadata-toggle:hover {
+  background: #222;
+}
+
+.project-metadata-summary {
+  margin-left: auto;
+  color: #3b82f6;
+  font-size: 0.85rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 65%;
+}
+
+.project-metadata-summary.empty {
+  color: #666;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.project-metadata-content {
+  padding: 0.75rem;
+  background: #0d0d0d;
+  border-top: 1px solid #333;
+  border-radius: 0 0 6px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.pm-field > label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.pm-input {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+
+.pm-input:focus {
+  outline: none;
+  border-color: #E8412A;
+}
+
+.pm-input::placeholder {
+  color: #555;
+  font-weight: 400;
+}
+
+/* Linked to the saved project's actual name — blue + bold to signal it */
+.pm-project-name-input {
+  color: #3b82f6;
+  font-weight: 700;
+}
+
+.pm-hint {
+  margin: 0;
+  font-size: 0.65rem;
+  color: #555;
+  line-height: 1.4;
+}

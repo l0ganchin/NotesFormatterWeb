@@ -9,44 +9,81 @@ import OutputDisplay from './components/OutputDisplay'
 import ExportModal from './components/ExportModal'
 import UserMenu from './components/UserMenu'
 import ProjectSelector from './components/ProjectSelector'
-import ProjectFiles from './components/ProjectFiles'
 import ProjectSharing from './components/ProjectSharing'
 import HowToGuide from './components/HowToGuide'
 import WhatsNew, { WHATS_NEW_VERSION } from './components/WhatsNew'
-import { formatNotes, getDefaultTakeawaysGuidance, parseQuantCategories, parseRespondentInfo } from './services/claude'
-import { exportToWord, DEFAULT_CONFIG } from './services/export'
-import { updateProject } from './services/firebase'
-import logo from './assets/logo.png'
+import PresetPillNav from './components/PresetPillNav'
+import WGAttendeesPicker from './components/WGAttendeesPicker'
+import SavePresetAsModal from './components/SavePresetAsModal'
+import ProjectMetadata from './components/ProjectMetadata'
+import { formatNotes, parseQuantCategories, parseRespondentInfo } from './services/claude'
+import { exportToWord, buildExportConfig, buildDocumentTitle } from './services/export'
+import { updateProject, createProject } from './services/firebase'
+import {
+  PRESET_KEYS,
+  buildDefaultPreset,
+  buildAllDefaultPresets,
+  normalizePreset,
+  migrateProjectToPresets,
+  todayISO,
+} from './services/presets'
+import logo from './assets/Logo.png'
 import './App.css'
 
 const PANEL_WIDTH_STORAGE_KEY = 'notes-formatter-panel-width'
 const WHATS_NEW_STORAGE_KEY = 'notes-formatter-whats-new-seen'
 
+// Initial form values: the Customer preset's defaults (customer is the
+// starting pill)
+const INITIAL_PRESET = buildDefaultPreset('customer')
 
 function AppContent() {
   const { user } = useAuth()
 
+  // ---- Per-note state (never saved to a preset) ----
   const [transcript, setTranscript] = useState('')
   const [notes, setNotes] = useState('')
   const apiKey = import.meta.env.VITE_CLAUDE_API_KEY || ''
   const [respondentInfo, setRespondentInfo] = useState({ name: '', role: '', company: '' })
   const [respondentManuallyEdited, setRespondentManuallyEdited] = useState(false)
-  const [takeawaysGuidance, setTakeawaysGuidance] = useState(getDefaultTakeawaysGuidance())
-  const [takeawayPreset, setTakeawayPreset] = useState('customer')
-  const [detailLevel, setDetailLevel] = useState('balanced')
-  const [quantCategories, setQuantCategories] = useState([])
-  const [includeImportance, setIncludeImportance] = useState(false)
-  const [coverageLevel, setCoverageLevel] = useState('exhaustive')
-  const [takeawayBullet, setTakeawayBullet] = useState('\u2022')
-  const [discussionBullet, setDiscussionBullet] = useState('\u2022')
-  const [formality, setFormality] = useState('standard')
-  const [discussionQuestionFormat, setDiscussionQuestionFormat] = useState('questions')
-  const [customStyleInstructions, setCustomStyleInstructions] = useState('Please be exhaustive and detailed, drawing on the source material. Include all details valuable to the conversation. Rewrite bullets as full sentences with added context so someone who didn\'t attend the call can easily follow. Full sentences only, formal language. Neutral in tone. Make at least 6 pages as content allows.')
-  const [projectContext, setProjectContext] = useState('')
+  const [interviewDate, setInterviewDate] = useState(todayISO())
+  const [extraAttendees, setExtraAttendees] = useState([])
   const [output, setOutput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [warning, setWarning] = useState('')
+
+  // ---- Preset-scoped state (saved per call type when Save is hit) ----
+  const [takeawaysGuidance, setTakeawaysGuidance] = useState(INITIAL_PRESET.takeawaysGuidance)
+  const [takeawayPreset, setTakeawayPreset] = useState(INITIAL_PRESET.takeawayPreset)
+  const [detailLevel, setDetailLevel] = useState(INITIAL_PRESET.detailLevel)
+  const [quantCategories, setQuantCategories] = useState(INITIAL_PRESET.quantCategories)
+  const [includeImportance, setIncludeImportance] = useState(INITIAL_PRESET.includeImportance)
+  const [coverageLevel, setCoverageLevel] = useState(INITIAL_PRESET.coverageLevel)
+  const [takeawayBullet, setTakeawayBullet] = useState(INITIAL_PRESET.takeawayBullet)
+  const [discussionBullet, setDiscussionBullet] = useState(INITIAL_PRESET.discussionBullet)
+  const [formality, setFormality] = useState(INITIAL_PRESET.formality)
+  const [discussionQuestionFormat, setDiscussionQuestionFormat] = useState(INITIAL_PRESET.discussionQuestionFormat)
+  const [customStyleInstructions, setCustomStyleInstructions] = useState(INITIAL_PRESET.customStyleInstructions)
+  const [projectContext, setProjectContext] = useState(INITIAL_PRESET.projectContext)
+  const [wgAttendees, setWgAttendees] = useState(INITIAL_PRESET.wgAttendees)
+
+  // ---- Preset navigation state ----
+  // The active pill doubles as the "Type of Call" in the exported header.
+  // Unsaved edits on a pill live in presetDrafts when you switch away, so
+  // flipping between pills never loses work; savedPresets mirrors Firestore.
+  const [activeCallType, setActiveCallType] = useState('customer')
+  const [presetDrafts, setPresetDrafts] = useState({ management: null, customer: null, expert: null })
+  const [savedPresets, setSavedPresets] = useState(() => buildAllDefaultPresets())
+  // Project-level metadata shared by all three presets: the project's actual
+  // name (renamed on Save) and the client company (both feed the doc title)
+  const [projectName, setProjectName] = useState('')
+  const [company, setCompany] = useState('')
+  const [isSavingPreset, setIsSavingPreset] = useState(false)
+  const [justSavedPreset, setJustSavedPreset] = useState(false)
+  const [saveAsOpen, setSaveAsOpen] = useState(false)
+  const activeCallTypeRef = useRef('customer')
+  const savedFlashTimerRef = useRef(null)
 
   // Project state
   const [currentProject, setCurrentProject] = useState(null)
@@ -79,9 +116,6 @@ function AppContent() {
     }
   }
 
-  // Project files panel - starts open when a project is active
-  const [projectFilesOpen, setProjectFilesOpen] = useState(true)
-
   // Resizable panel state
   const [leftPanelWidth, setLeftPanelWidth] = useState(50)
   const [isResizing, setIsResizing] = useState(false)
@@ -93,23 +127,187 @@ function AppContent() {
   const pendingOutputRef = useRef('')
   const flushTimerRef = useRef(null)
 
-  // Load project settings when project changes
+  const collectCurrentPreset = () =>
+    normalizePreset(
+      {
+        takeawaysGuidance,
+        takeawayPreset,
+        detailLevel,
+        quantCategories,
+        includeImportance,
+        coverageLevel,
+        takeawayBullet,
+        discussionBullet,
+        formality,
+        discussionQuestionFormat,
+        customStyleInstructions,
+        projectContext,
+        wgAttendees,
+      },
+      activeCallType
+    )
+
+  const applyPreset = (preset, callType) => {
+    const p = normalizePreset(preset, callType)
+    setTakeawaysGuidance(p.takeawaysGuidance)
+    setTakeawayPreset(p.takeawayPreset)
+    setDetailLevel(p.detailLevel)
+    setQuantCategories(p.quantCategories)
+    setIncludeImportance(p.includeImportance)
+    setCoverageLevel(p.coverageLevel)
+    setTakeawayBullet(p.takeawayBullet)
+    setDiscussionBullet(p.discussionBullet)
+    setFormality(p.formality)
+    setDiscussionQuestionFormat(p.discussionQuestionFormat)
+    setCustomStyleInstructions(p.customStyleInstructions)
+    setProjectContext(p.projectContext)
+    setWgAttendees(p.wgAttendees)
+  }
+
+  // Load presets when the project changes (guarded by id so in-place project
+  // updates after a save don't re-trigger a full reload and clobber drafts)
+  const loadedProjectIdRef = useRef(undefined)
   useEffect(() => {
-    if (currentProject) {
-      // Use nullish coalescing to preserve empty string (autodetect mode)
-      setTakeawaysGuidance(currentProject.takeawaysGuidance ?? '')
-      setTakeawayPreset(currentProject.takeawayPreset ?? 'customer')
-      setQuantCategories(currentProject.quantCategories ?? [])
-      setIncludeImportance(currentProject.includeImportance ?? false)
-      setCoverageLevel(currentProject.coverageLevel ?? 'exhaustive')
-      setTakeawayBullet(currentProject.takeawayBullet ?? '\u2022')
-      setDiscussionBullet(currentProject.discussionBullet ?? '\u2022')
-      setFormality(currentProject.formality ?? 'standard')
-      setDiscussionQuestionFormat(currentProject.discussionQuestionFormat ?? 'questions')
-      setCustomStyleInstructions(currentProject.customStyleInstructions ?? 'Please be exhaustive and detailed, drawing on the source material. Include all details valuable to the conversation. Rewrite bullets as full sentences with added context so someone who didn\'t attend the call can easily follow. Full sentences only, formal language. Neutral in tone. Make at least 6 pages as content allows.')
-      setProjectContext(currentProject.projectContext ?? '')
+    const projectId = currentProject?.id ?? null
+    if (loadedProjectIdRef.current === projectId) return
+    loadedProjectIdRef.current = projectId
+
+    let presets
+    if (!currentProject) {
+      presets = buildAllDefaultPresets()
+      setProjectName('')
+      setCompany('')
+    } else {
+      if (currentProject.presets) {
+        presets = {}
+        for (const key of PRESET_KEYS) {
+          presets[key] = normalizePreset(currentProject.presets[key], key)
+        }
+      } else {
+        // Pre-preset project: seed all three presets from its flat settings
+        // and write the new shape back once
+        presets = migrateProjectToPresets(currentProject)
+        updateProject(currentProject.id, { presets }).catch((err) =>
+          console.warn('Failed to migrate project to presets:', err)
+        )
+      }
+      setProjectName(currentProject.name ?? '')
+      setCompany(currentProject.company ?? '')
     }
+
+    setSavedPresets(presets)
+    setPresetDrafts({ management: null, customer: null, expert: null })
+    applyPreset(presets[activeCallTypeRef.current], activeCallTypeRef.current)
   }, [currentProject])
+
+  const handleCallTypeChange = (next) => {
+    if (next === activeCallType) return
+    // Stash the current pill's values so its unsaved edits survive the switch
+    setPresetDrafts((prev) => ({ ...prev, [activeCallType]: collectCurrentPreset() }))
+    applyPreset(presetDrafts[next] ?? savedPresets[next], next)
+    activeCallTypeRef.current = next
+    setActiveCallType(next)
+  }
+
+  const handleSavePreset = async () => {
+    if (!currentProject || !user) return
+    setIsSavingPreset(true)
+    try {
+      const preset = collectCurrentPreset()
+      // The Project Name field is linked to the project itself — saving a
+      // changed name renames the project everywhere
+      const name = projectName.trim() || currentProject.name
+      const companyValue = company.trim()
+      await updateProject(currentProject.id, {
+        [`presets.${activeCallType}`]: preset,
+        name,
+        company: companyValue,
+      })
+      setProjectName(name)
+      setCompany(companyValue)
+      setSavedPresets((prev) => ({ ...prev, [activeCallType]: preset }))
+      setPresetDrafts((prev) => ({ ...prev, [activeCallType]: null }))
+      setCurrentProject((prev) =>
+        prev
+          ? { ...prev, name, company: companyValue, presets: { ...(prev.presets || {}), [activeCallType]: preset } }
+          : prev
+      )
+      setJustSavedPreset(true)
+      if (savedFlashTimerRef.current) clearTimeout(savedFlashTimerRef.current)
+      savedFlashTimerRef.current = setTimeout(() => setJustSavedPreset(false), 2000)
+    } catch (err) {
+      console.error('Failed to save preset:', err)
+      setError('Failed to save preset: ' + (err.message || 'unknown error'))
+    } finally {
+      setIsSavingPreset(false)
+    }
+  }
+
+  // "Save As": copy the current parameters into any call-type slot of a new
+  // or existing project. Called by SavePresetAsModal, which surfaces errors.
+  const handleSaveAs = async ({ project, newProjectName, callType }) => {
+    if (!user) return
+    const preset = normalizePreset(collectCurrentPreset(), callType)
+
+    if (newProjectName) {
+      const presets = { ...buildAllDefaultPresets(), [callType]: preset }
+      const created = await createProject(user.uid, {
+        name: newProjectName,
+        company: company.trim(),
+        presets,
+      })
+      // Switch into the new project on its saved pill — the applied preset
+      // equals the current values, so the form doesn't change under the user
+      activeCallTypeRef.current = callType
+      setActiveCallType(callType)
+      setCurrentProject(created)
+      return
+    }
+
+    if (!project.presets) {
+      // Legacy flat-settings project: migrate all three presets now, so a
+      // partial presets map doesn't shadow its old settings on next load
+      const presets = migrateProjectToPresets(project)
+      presets[callType] = preset
+      await updateProject(project.id, { presets })
+    } else {
+      await updateProject(project.id, { [`presets.${callType}`]: preset })
+    }
+
+    // Saving into the currently open project: sync in-memory state so the
+    // dirty indicators reflect the new saved values (no reload — the load
+    // effect is keyed on project id)
+    if (project.id === currentProject?.id) {
+      setSavedPresets((prev) => ({ ...prev, [callType]: preset }))
+      setCurrentProject((prev) =>
+        prev ? { ...prev, presets: { ...(prev.presets || {}), [callType]: preset } } : prev
+      )
+    }
+  }
+
+  // Dirty tracking: presets are normalized through the same key order, so a
+  // simple stringify comparison is reliable
+  const isProjectMode = !!currentProject && !!user
+  const dirtyByType = {}
+  for (const key of PRESET_KEYS) {
+    const values = key === activeCallType ? collectCurrentPreset() : presetDrafts[key]
+    dirtyByType[key] = !!values && JSON.stringify(values) !== JSON.stringify(savedPresets[key])
+  }
+  if (isProjectMode && (projectName !== (currentProject.name ?? '') || company !== (currentProject.company ?? ''))) {
+    dirtyByType[activeCallType] = true
+  }
+
+  // Everything the export header, document title, and metadata block need
+  const noteMeta = {
+    projectName,
+    company,
+    callType: activeCallType,
+    interviewDate,
+    respondentName: respondentInfo.name,
+    companyLabel: respondentInfo.company,
+    extraAttendees,
+    wgAttendees,
+  }
 
   // Handle resize drag
   const handleMouseDown = useCallback((e) => {
@@ -248,13 +446,16 @@ function AppContent() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
-    // Clear all inputs and output
+    // Clear per-note inputs and output; preset parameters revert to the
+    // active pill's saved values
     setTranscript('')
     setNotes('')
     setRespondentInfo({ name: '', role: '', company: '' })
     setRespondentManuallyEdited(false)
-    setCustomStyleInstructions('Please be exhaustive and detailed, drawing on the source material. Include all details valuable to the conversation. Rewrite bullets as full sentences with added context so someone who didn\'t attend the call can easily follow. Full sentences only, formal language. Neutral in tone. Make at least 6 pages as content allows.')
-    setProjectContext('')
+    setInterviewDate(todayISO())
+    setExtraAttendees([])
+    setCustomStyleInstructions(savedPresets[activeCallType].customStyleInstructions)
+    setProjectContext(savedPresets[activeCallType].projectContext)
     setOutput('')
     setError('')
     setWarning('')
@@ -280,59 +481,31 @@ function AppContent() {
   }
 
   const handleExport = async ({ mode, existingFile }) => {
-    // Build custom config with user-selected bullet characters
-    const customConfig = {
-      ...DEFAULT_CONFIG,
-      takeaway_bullet: {
-        ...DEFAULT_CONFIG.takeaway_bullet,
-        bullet: takeawayBullet,
-      },
-      discussion_bullet: {
-        ...DEFAULT_CONFIG.discussion_bullet,
-        bullet: discussionBullet,
-      },
-      quant_bullet: {
-        ...DEFAULT_CONFIG.quant_bullet,
-        bullet: discussionBullet, // Use discussion bullet for quant
-      },
-    }
-    await exportToWord(output, { mode, existingFile, config: customConfig, respondentInfo })
+    await exportToWord(output, {
+      mode,
+      existingFile,
+      config: buildExportConfig({ takeawayBullet, discussionBullet }),
+      respondentInfo,
+      noteMeta,
+    })
   }
 
   const handleSelectProject = (project) => {
     setCurrentProject(project)
   }
 
+  // A project was renamed in the My Projects list — keep the in-memory copy
+  // and the metadata field in sync when it's the active one
+  const handleProjectRenamed = (projectId, newName) => {
+    if (currentProject?.id === projectId) {
+      setCurrentProject((prev) => (prev ? { ...prev, name: newName } : prev))
+      setProjectName(newName)
+    }
+  }
+
   const handleOneOffMode = () => {
     setCurrentProject(null)
   }
-
-  // Save project settings when they change (debounced)
-  useEffect(() => {
-    if (!currentProject || !user) return
-
-    const timeoutId = setTimeout(async () => {
-      try {
-        await updateProject(currentProject.id, {
-          takeawaysGuidance,
-          takeawayPreset,
-          quantCategories,
-          includeImportance,
-          coverageLevel,
-          takeawayBullet,
-          discussionBullet,
-          formality,
-          discussionQuestionFormat,
-          customStyleInstructions,
-          projectContext,
-        })
-      } catch (err) {
-        console.warn('Failed to auto-save project settings:', err)
-      }
-    }, 1000)
-
-    return () => clearTimeout(timeoutId)
-  }, [takeawaysGuidance, takeawayPreset, quantCategories, includeImportance, coverageLevel, takeawayBullet, discussionBullet, formality, discussionQuestionFormat, customStyleInstructions, projectContext, currentProject, user])
 
   return (
     <div className="app">
@@ -363,38 +536,43 @@ function AppContent() {
 
       <main className={`app-main ${isResizing ? 'resizing' : ''}`} ref={mainRef}>
         <section className="input-panel" style={{ width: `${leftPanelWidth}%` }}>
-          {/* Project Files Browser - only visible when a project is selected */}
-          {currentProject && (
-            <ProjectFiles
-              projectId={currentProject.id}
-              isOpen={projectFilesOpen}
-              onToggle={() => setProjectFilesOpen(!projectFilesOpen)}
-              user={user}
-              transcript={transcript}
-              notes={notes}
-              respondentInfo={respondentInfo}
-            />
-          )}
+          <PresetPillNav
+            activeCallType={activeCallType}
+            onChange={handleCallTypeChange}
+            dirtyByType={isProjectMode ? dirtyByType : {}}
+            isProjectMode={isProjectMode}
+            onSave={handleSavePreset}
+            isSaving={isSavingPreset}
+            justSaved={justSavedPreset}
+            canSaveAs={!!user}
+            onSaveAs={() => setSaveAsOpen(true)}
+          />
+
+          <ProjectMetadata
+            projectName={projectName}
+            onProjectNameChange={setProjectName}
+            company={company}
+            onCompanyChange={setCompany}
+          />
 
           <RespondentInput
             value={respondentInfo}
             onChange={handleRespondentChange}
             onClear={handleRespondentClear}
             isManuallyEdited={respondentManuallyEdited}
+            interviewDate={interviewDate}
+            onInterviewDateChange={setInterviewDate}
+            extraAttendees={extraAttendees}
+            onExtraAttendeesChange={setExtraAttendees}
           />
+
+          <WGAttendeesPicker value={wgAttendees} onChange={setWgAttendees} />
 
           <FileInput
             label="Transcript"
             value={transcript}
             onChange={setTranscript}
             placeholder="Paste the meeting transcript here, or upload a file..."
-          />
-
-          <FileInput
-            label="Meeting Notes (optional)"
-            value={notes}
-            onChange={setNotes}
-            placeholder="Paste your raw meeting notes here, or upload a file..."
           />
 
           <div className="custom-instructions-field">
@@ -436,6 +614,14 @@ function AppContent() {
               Identify who is who — client vs. team members, company names, and what to focus on. ({projectContext.length}/500)
             </p>
           </div>
+
+          <FileInput
+            label="Meeting Notes (optional)"
+            value={notes}
+            onChange={setNotes}
+            placeholder="Paste your raw meeting notes here, or upload a file..."
+            collapsible
+          />
 
           <PromptSettings
             takeawaysGuidance={takeawaysGuidance}
@@ -500,11 +686,7 @@ function AppContent() {
             onExportWord={handleExportWordClick}
             takeawayBullet={takeawayBullet}
             discussionBullet={discussionBullet}
-            currentProject={currentProject}
-            user={user}
-            respondentInfo={respondentInfo}
-            transcript={transcript}
-            notes={notes}
+            noteMeta={noteMeta}
           />
         </section>
       </main>
@@ -513,12 +695,16 @@ function AppContent() {
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
         onExport={handleExport}
-        currentProject={currentProject}
+        documentTitle={buildDocumentTitle(noteMeta)}
+      />
+
+      <SavePresetAsModal
+        isOpen={saveAsOpen}
+        onClose={() => setSaveAsOpen(false)}
+        onSave={handleSaveAs}
         user={user}
-        respondentInfo={respondentInfo}
-        output={output}
-        takeawayBullet={takeawayBullet}
-        discussionBullet={discussionBullet}
+        currentProjectId={currentProject?.id ?? null}
+        defaultCallType={activeCallType}
       />
 
       <ProjectSelector
@@ -527,6 +713,7 @@ function AppContent() {
         currentProject={currentProject}
         onSelectProject={handleSelectProject}
         onOneOffMode={handleOneOffMode}
+        onProjectRenamed={handleProjectRenamed}
         onOpenSharing={(project) => {
           setProjectSelectorOpen(false)
           setSharingProject(project)

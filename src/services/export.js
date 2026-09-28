@@ -7,30 +7,49 @@ import {
   LevelFormat,
   AlignmentType,
   Packer,
+  Header,
+  ImageRun,
+  Tab,
+  TabStopType,
+  LineRuleType,
 } from 'docx'
 import { saveAs } from 'file-saver'
 import { mergeDocxBlobs } from './docxMerge'
+import { CALL_TYPE_LABELS } from './presets'
+// "?inline" makes Vite bundle the logo as a base64 data URL, so the header
+// image can never be lost to a failed asset fetch (dev, deployed, or offline)
+import logoDataUrl from '../assets/logo-horizontal-winterberrygroup-red.png?inline'
 
-// Default configuration matching the Python script
+// Default configuration matching the WG notes template: Open Sans body at 12pt,
+// title as a black Open Sans 14pt Heading 1, Segoe UI 12pt bold running header
 const DEFAULT_CONFIG = {
-  title: { font: 'Aptos', size: 14, bold: false, color: '0F4761' },
-  section_header: { font: 'Calibri', size: 11, bold: true, underline: true },
-  takeaway_bullet: { font: 'Calibri', size: 11, bullet: '\u2022', indent: 0.5 },
-  discussion_question: { font: 'Calibri', size: 11, bold: true, italic: true },
-  discussion_bullet: { font: 'Calibri', size: 11, bullet: '\u2022', indent: 0.5 },
-  quant_header: { font: 'Calibri', size: 11, bold: true, italic: true },
-  quant_category: { font: 'Calibri', size: 11, bold: true },
-  quant_bullet: { font: 'Calibri', size: 11, bullet: '\u2022', indent: 0.5 },
+  title: { font: 'Open Sans', size: 14, bold: true, color: '000000' },
+  meta: { font: 'Open Sans', size: 12 },
+  section_header: { font: 'Open Sans', size: 12, bold: true, underline: true },
+  takeaway_bullet: { font: 'Open Sans', size: 12, bullet: '•', indent: 0.5 },
+  discussion_question: { font: 'Open Sans', size: 12, bold: true, italic: true },
+  discussion_bullet: { font: 'Open Sans', size: 12, bullet: '•', indent: 0.5 },
+  quant_header: { font: 'Open Sans', size: 12, bold: true, italic: true },
+  quant_category: { font: 'Open Sans', size: 12, bold: true },
+  quant_bullet: { font: 'Open Sans', size: 12, bullet: '•', indent: 0.5 },
+  running_header: { font: 'Segoe UI', size: 12, bold: true },
 }
 
-// Single source of truth for paragraph spacing (twips: 20 = 1pt).
-// Every bullet in every section uses SPACING.bullet so gaps are uniform.
+// Template paragraph spacing: After 8pt (160 twips), line spacing Multiple 1.16
+// (278 = 1.16 x 240 with lineRule AUTO), applied uniformly to every paragraph.
+// "Don't add space between paragraphs of the same style" is unchecked, which is
+// Word's default — contextualSpacing is simply never set.
+// Applied as direct formatting (not only styles.xml) so the values survive
+// merges into documents whose own styles differ.
+const BODY_SPACING = { after: 160, line: 278, lineRule: LineRuleType.AUTO }
+
 const SPACING = {
-  title: { before: 160, after: 80 },
-  sectionHeader: { before: 240, after: 120 },
-  question: { before: 200, after: 80 },
-  quantCategory: { before: 160, after: 80 },
-  bullet: { before: 0, after: 80 },
+  title: { ...BODY_SPACING },
+  meta: { ...BODY_SPACING },
+  sectionHeader: { ...BODY_SPACING },
+  question: { ...BODY_SPACING },
+  quantCategory: { ...BODY_SPACING },
+  bullet: { ...BODY_SPACING },
 }
 
 // Numbering reference IDs for native Word bullets
@@ -41,7 +60,7 @@ const NUMBERING_REFS = {
 }
 
 // Markdown bullet markers we accept from the model / older saved outputs
-const BULLET_LINE_RE = /^([-*\u2022\u25cf\u25cb\u25a0\u27a2\u2013])\s+/
+const BULLET_LINE_RE = /^([-*•●○■➢–])\s+/
 
 // Create numbering config for native Word bullets. Each list uses the configured
 // bullet character as its glyph, so every style exports as a real Word list
@@ -58,7 +77,7 @@ function createNumberingConfig(config = DEFAULT_CONFIG) {
     levels: [{
       level: 0,
       format: LevelFormat.BULLET,
-      text: style.bullet || '\u2022',
+      text: style.bullet || '•',
       alignment: AlignmentType.LEFT,
       style: {
         paragraph: {
@@ -78,8 +97,8 @@ function removeTrailingPeriod(text) {
 function createTextRun(text, style) {
   const options = {
     text,
-    font: style.font || 'Calibri',
-    size: (style.size || 11) * 2, // docx uses half-points
+    font: style.font || 'Open Sans',
+    size: (style.size || 12) * 2, // docx uses half-points
     bold: style.bold || false,
     italics: style.italic || false,
     underline: style.underline ? {} : undefined,
@@ -104,8 +123,8 @@ function createNativeBulletParagraph(numberingRef, text, style, { keepTrailingPe
     children: [
       new TextRun({
         text: cleanText,
-        font: style.font || 'Calibri',
-        size: (style.size || 11) * 2,
+        font: style.font || 'Open Sans',
+        size: (style.size || 12) * 2,
         bold: style.textBold || false,
       }),
     ],
@@ -125,14 +144,14 @@ function createQuantLabelBulletParagraph(label, value, style) {
     children: [
       new TextRun({
         text: label + ' ',
-        font: style.font || 'Calibri',
-        size: (style.size || 11) * 2,
+        font: style.font || 'Open Sans',
+        size: (style.size || 12) * 2,
         bold: true,
       }),
       new TextRun({
         text: cleanValue,
-        font: style.font || 'Calibri',
-        size: (style.size || 11) * 2,
+        font: style.font || 'Open Sans',
+        size: (style.size || 12) * 2,
       }),
     ],
     numbering: {
@@ -143,11 +162,167 @@ function createQuantLabelBulletParagraph(label, value, style) {
   })
 }
 
-export function parseMarkdownToDocx(markdownText, config = DEFAULT_CONFIG) {
+// ---- Running header (logo + "[Project name]: [Type of Call] Notes") ----
+
+// The bundled logo, decoded from the inlined data URL once and cached
+let cachedLogo = null
+function getLogo() {
+  if (!cachedLogo) {
+    const base64 = logoDataUrl.slice(logoDataUrl.indexOf(',') + 1)
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    cachedLogo = { bytes, ...readPngDimensions(bytes) }
+  }
+  return cachedLogo
+}
+
+// PNG stores width/height as big-endian uint32s at bytes 16-23 (IHDR chunk),
+// so a swapped logo asset scales correctly without touching this code
+function readPngDimensions(bytes) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  if (view.byteLength >= 24) {
+    const width = view.getUint32(16)
+    const height = view.getUint32(20)
+    if (width > 0 && height > 0) return { width, height }
+  }
+  return { width: 4216, height: 1343 } // current logo asset dimensions as fallback
+}
+
+// ~0.46" tall in the header, matching the template's logo proportions
+const HEADER_LOGO_HEIGHT_PX = 44
+
+// "[Project name]: [Type of Call] Notes" — shared with the on-screen preview
+export function buildHeaderText(noteMeta) {
+  const label = CALL_TYPE_LABELS[noteMeta?.callType] || 'Expert'
+  const projectName = (noteMeta?.projectName || '').trim()
+  return projectName ? `${projectName}: ${label} Notes` : `${label} Notes`
+}
+
+// Document title (also the export filename):
+// "Winterberry Group -- [COMPANY] [PROJECT] [Type] Call Notes -- DD Month YYYY"
+// Company and project come from the project metadata; empty parts drop out.
+export function buildDocumentTitle(noteMeta) {
+  const label = CALL_TYPE_LABELS[noteMeta?.callType] || 'Expert'
+  const middle = [noteMeta?.company, noteMeta?.projectName, label]
+    .map((part) => (part || '').trim())
+    .filter(Boolean)
+    .join(' ')
+  const datePart = formatTitleDate(noteMeta?.interviewDate)
+  return `Winterberry Group -- ${middle} Call Notes${datePart ? ` -- ${datePart}` : ''}`
+}
+
+// "DD Month YYYY" (e.g. "05 September 2026") from the YYYY-MM-DD date input,
+// built from split parts to avoid the UTC-parse off-by-one
+function formatTitleDate(isoDate) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate || '')
+  if (!match) return ''
+  const monthName = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+    .toLocaleDateString('en-US', { month: 'long' })
+  return `${match[3]} ${monthName} ${match[1]}`
+}
+
+function createRunningHeader(noteMeta, logo, config = DEFAULT_CONFIG) {
+  const style = config.running_header || DEFAULT_CONFIG.running_header
+  const children = [
+    new TextRun({
+      text: buildHeaderText(noteMeta),
+      font: style.font,
+      size: style.size * 2,
+      bold: style.bold,
+    }),
+  ]
+
+  if (logo) {
+    children.push(new TextRun({ children: [new Tab()] }))
+    children.push(
+      new ImageRun({
+        type: 'png',
+        data: logo.bytes,
+        transformation: {
+          width: Math.round(HEADER_LOGO_HEIGHT_PX * (logo.width / logo.height)),
+          height: HEADER_LOGO_HEIGHT_PX,
+        },
+      })
+    )
+  }
+
+  return new Header({
+    children: [
+      new Paragraph({
+        // Right tab stop at the 6.5" text width (letter page, 1" margins)
+        // pushes the logo flush to the right margin on the same line
+        tabStops: [{ type: TabStopType.RIGHT, position: convertInchesToTwip(6.5) }],
+        spacing: { after: 120, line: 240, lineRule: LineRuleType.AUTO },
+        children,
+      }),
+    ],
+  })
+}
+
+// ---- Metadata block (Date / [Company] Attendees / WG Attendees) ----
+
+// <input type="date"> gives YYYY-MM-DD. Build the Date from split parts —
+// new Date('2026-09-28') parses as UTC midnight and renders as the previous
+// day in US timezones.
+function formatInterviewDate(isoDate) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate || '')
+  if (!match) return isoDate || ''
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
+// The [label, value] rows under the title. Shared with FormattedPreview so the
+// on-screen preview and the .docx can never drift. All three template rows are
+// always emitted — an empty value leaves the line ready to fill in Word.
+export function buildMetaRows(noteMeta) {
+  if (!noteMeta) return []
+
+  const attendees = [noteMeta.respondentName, ...(noteMeta.extraAttendees || [])]
+    .map((name) => (name || '').trim())
+    .filter(Boolean)
+  const companyLabel = (noteMeta.companyLabel || '').trim() || 'Company'
+
+  return [
+    ['Date:', formatInterviewDate(noteMeta.interviewDate)],
+    [`${companyLabel} Attendees:`, attendees.join(', ')],
+    ['WG Attendees:', (noteMeta.wgAttendees || []).join(', ')],
+  ]
+}
+
+function createMetaParagraphs(noteMeta, config = DEFAULT_CONFIG) {
+  const style = config.meta || DEFAULT_CONFIG.meta
+  return buildMetaRows(noteMeta).map(
+    ([label, value]) =>
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: value ? `${label} ` : label,
+            font: style.font,
+            size: style.size * 2,
+            bold: true,
+          }),
+          ...(value
+            ? [
+                new TextRun({
+                  text: value,
+                  font: style.font,
+                  size: style.size * 2,
+                }),
+              ]
+            : []),
+        ],
+        spacing: SPACING.meta,
+      })
+  )
+}
+
+export function parseMarkdownToDocx(markdownText, config = DEFAULT_CONFIG, noteMeta = null) {
   const paragraphs = []
 
   const lines = markdownText.trim().split('\n')
   let currentSection = null
+  let metaInserted = !noteMeta
   let i = 0
 
   while (i < lines.length) {
@@ -164,13 +339,19 @@ export function parseMarkdownToDocx(markdownText, config = DEFAULT_CONFIG) {
       const titleText = line.replace('### ', '').replace(/\*\*/g, '').trim()
       const titleStyle = config.title || DEFAULT_CONFIG.title
 
+      // Heading 1 is a real embedded Word style (shows in the nav pane); the
+      // explicit run keeps the look when merged into a doc with other styles
       paragraphs.push(
         new Paragraph({
-          heading: HeadingLevel.HEADING_2,
+          heading: HeadingLevel.HEADING_1,
           children: [createTextRun(titleText, titleStyle)],
           spacing: SPACING.title,
         })
       )
+      if (!metaInserted) {
+        paragraphs.push(...createMetaParagraphs(noteMeta, config))
+        metaInserted = true
+      }
       i++
       continue
     }
@@ -328,13 +509,19 @@ export function parseMarkdownToDocx(markdownText, config = DEFAULT_CONFIG) {
         children: [
           new TextRun({
             text: line.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#/g, '').trim(),
-            font: 'Calibri',
-            size: 22,
+            font: DEFAULT_CONFIG.meta.font,
+            size: DEFAULT_CONFIG.meta.size * 2,
           }),
         ],
+        spacing: { ...BODY_SPACING },
       })
     )
     i++
+  }
+
+  // Output with no recognizable title line: put the metadata block first
+  if (!metaInserted) {
+    paragraphs.unshift(...createMetaParagraphs(noteMeta, config))
   }
 
   return paragraphs
@@ -346,20 +533,50 @@ function sanitizeFilename(str) {
   return str.trim().replace(/[/\\?%*:|"<>]/g, '_')
 }
 
+// The one place per-user options become an export config — callers pass their
+// bullet glyph choices here instead of rebuilding DEFAULT_CONFIG spreads.
+export function buildExportConfig({ takeawayBullet, discussionBullet } = {}) {
+  return {
+    ...DEFAULT_CONFIG,
+    takeaway_bullet: { ...DEFAULT_CONFIG.takeaway_bullet, bullet: takeawayBullet || '•' },
+    discussion_bullet: { ...DEFAULT_CONFIG.discussion_bullet, bullet: discussionBullet || '•' },
+    quant_bullet: { ...DEFAULT_CONFIG.quant_bullet, bullet: discussionBullet || '•' },
+  }
+}
+
 // Build a complete .docx blob from formatted markdown. This is the ONLY correct
 // way to turn output into a document: it always includes the numbering config
 // (without it, bullet paragraphs reference lists that don't exist and Word does
-// not render them as bullets) and standard 1" margins.
+// not render them as bullets), standard 1" margins, and the template styles.
+// When noteMeta is provided, the doc also gets the WG running header (logo +
+// "[Project name]: [Type of Call] Notes") and the Date/Attendees block.
 // Blobs destined for a merge need no special handling — mergeDocxBlobs remaps
 // list IDs so appended bullets stay live without touching the target's lists.
-export async function buildDocxBlob(markdownText, config = DEFAULT_CONFIG) {
-  const paragraphs = parseMarkdownToDocx(markdownText, config)
+export async function buildDocxBlob(markdownText, config = DEFAULT_CONFIG, noteMeta = null) {
+  const logo = noteMeta ? getLogo() : null
+  const paragraphs = parseMarkdownToDocx(markdownText, config, noteMeta)
+
   const doc = new Document({
+    ...(noteMeta ? { title: buildDocumentTitle(noteMeta) } : {}),
+    styles: {
+      default: {
+        document: {
+          run: { font: 'Open Sans', size: 24 }, // half-points: 12pt
+          paragraph: { spacing: { ...BODY_SPACING } },
+        },
+        // Real embedded Heading 1 — black instead of Word's default blue
+        heading1: {
+          run: { font: 'Open Sans', size: 28, bold: true, color: '000000' },
+          paragraph: { spacing: { ...BODY_SPACING } },
+        },
+      },
+    },
     numbering: {
       config: createNumberingConfig(config),
     },
     sections: [
       {
+        ...(noteMeta ? { headers: { default: createRunningHeader(noteMeta, logo, config) } } : {}),
         properties: {
           page: {
             margin: {
@@ -379,13 +596,13 @@ export async function buildDocxBlob(markdownText, config = DEFAULT_CONFIG) {
 }
 
 export async function exportToWord(markdownText, options = {}) {
-  const { mode = 'new', existingFile = null, config = DEFAULT_CONFIG, respondentInfo = {} } = options
+  const { mode = 'new', existingFile = null, config = DEFAULT_CONFIG, respondentInfo = {}, noteMeta = null } = options
 
   if (mode === 'append' && existingFile) {
     // Read existing file and inject the new content into it
     const existingArrayBuffer = await existingFile.arrayBuffer()
 
-    const newBlob = await buildDocxBlob(markdownText, config)
+    const newBlob = await buildDocxBlob(markdownText, config, noteMeta)
     const newArrayBuffer = await newBlob.arrayBuffer()
 
     const mergedBlob = await mergeDocxBlobs(existingArrayBuffer, newArrayBuffer)
@@ -398,14 +615,20 @@ export async function exportToWord(markdownText, options = {}) {
   }
 
   // New document mode
-  const blob = await buildDocxBlob(markdownText, config)
+  const blob = await buildDocxBlob(markdownText, config, noteMeta)
 
-  // Generate filename: Name_Role_Company_Notes_YYYY-MM-DD.docx
-  const name = sanitizeFilename(respondentInfo.name)
-  const role = sanitizeFilename(respondentInfo.role)
-  const company = sanitizeFilename(respondentInfo.company)
-  const date = new Date().toISOString().slice(0, 10)
-  const filename = `${name}_${role}_${company}_Notes_${date}.docx`
+  let filename
+  if (noteMeta) {
+    // Document-title filename: "Winterberry Group -- ... Call Notes -- DD Month YYYY.docx"
+    filename = `${sanitizeFilename(buildDocumentTitle(noteMeta))}.docx`
+  } else {
+    // Legacy fallback: Name_Role_Company_Notes_YYYY-MM-DD.docx
+    const name = sanitizeFilename(respondentInfo.name)
+    const role = sanitizeFilename(respondentInfo.role)
+    const company = sanitizeFilename(respondentInfo.company)
+    const date = new Date().toISOString().slice(0, 10)
+    filename = `${name}_${role}_${company}_Notes_${date}.docx`
+  }
 
   saveAs(blob, filename)
   return { filename }

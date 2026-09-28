@@ -1,0 +1,228 @@
+.saveas-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fade-in 0.15s ease-out;
+}
+
+.saveas-modal {
+  width: 420px;
+  max-width: calc(100vw - 2rem);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+}
+
+.saveas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #333;
+}
+
+.saveas-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #eee;
+}
+
+.saveas-header .close-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.2rem;
+}
+
+.saveas-header .close-btn:hover {
+  color: #ccc;
+}
+
+.saveas-content {
+  padding: 0.9rem 1rem 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.saveas-label {
+  font-weight: 600;
+  font-size: 0.72rem;
+  color: #888;
+}
+
+.saveas-project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.saveas-project-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 5px;
+  color: #ccc;
+  font-size: 0.78rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.saveas-project-option:hover {
+  border-color: #555;
+}
+
+.saveas-project-option.selected {
+  border-color: #E8412A;
+  background: rgba(232, 65, 42, 0.08);
+}
+
+.saveas-project-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saveas-current-tag {
+  flex-shrink: 0;
+  padding: 0.1rem 0.4rem;
+  background: #333;
+  border-radius: 3px;
+  color: #999;
+  font-size: 0.62rem;
+}
+
+.saveas-name-input {
+  padding: 0.45rem 0.6rem;
+  background: #111;
+  border: 1px solid #E8412A;
+  border-radius: 5px;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.78rem;
+}
+
+.saveas-name-input:focus {
+  outline: none;
+}
+
+.saveas-loading {
+  padding: 0.5rem;
+  color: #666;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.saveas-type-pills {
+  display: flex;
+  width: fit-content;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 999px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.saveas-type-pill {
+  padding: 0.26rem 0.65rem;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  color: #888;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.saveas-type-pill:hover {
+  color: #ccc;
+}
+
+.saveas-type-pill.active {
+  background: #E8412A;
+  color: white;
+}
+
+.saveas-hint {
+  margin: 0;
+  font-size: 0.68rem;
+  font-style: italic;
+  color: #777;
+}
+
+.saveas-error {
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 100, 100, 0.1);
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  border-radius: 4px;
+  color: #ff6b6b;
+  font-size: 0.75rem;
+}
+
+.saveas-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.saveas-cancel {
+  padding: 0.4rem 0.9rem;
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 5px;
+  color: #999;
+  font-size: 0.78rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.saveas-cancel:hover {
+  border-color: #555;
+  color: #ccc;
+}
+
+.saveas-confirm {
+  padding: 0.4rem 1.1rem;
+  background: #E8412A;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.saveas-confirm:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.saveas-confirm:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

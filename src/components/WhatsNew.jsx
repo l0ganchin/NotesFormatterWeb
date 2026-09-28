@@ -3,7 +3,7 @@ import './WhatsNew.css'
 
 // Bump this when shipping a release worth announcing — the popup shows once
 // per browser per version (tracked in localStorage by App.jsx)
-export const WHATS_NEW_VERSION = '2026-07-22'
+export const WHATS_NEW_VERSION = '2026-09-28'
 
 export default function WhatsNew({ isOpen, onClose, onOpenGuide }) {
   // Close on Escape (also marks as seen via onClose)
@@ -29,34 +29,37 @@ export default function WhatsNew({ isOpen, onClose, onOpenGuide }) {
       >
         <div className="whatsnew-header">
           <h2><span className="whatsnew-spark" aria-hidden="true">✨</span> What&apos;s New</h2>
-          <span className="whatsnew-date">July 2026</span>
+          <span className="whatsnew-date">September 2026</span>
         </div>
 
         <div className="whatsnew-content">
           <ul>
             <li>
-              <strong>Cleaner writing.</strong> Filler words and AI-style phrasing (em-dash
-              asides, stock intensifiers) are stripped; takeaways are tighter and follow a
-              new four-theme template; speaker references vary naturally.
+              <strong>New WG notes template.</strong> Exports match the updated template:
+              a running header with the WG logo and "[Project name]: [Type of Call] Notes",
+              a black Heading 1 title, and Open Sans 12pt body with template spacing.
             </li>
             <li>
-              <strong>Importance ratings.</strong> Quant sections support an Importance line
-              before each Score (N/A when not asked) — toggle it in Quantitative Scores;
-              it saves with the project.
+              <strong>Call-type presets.</strong> Each project holds Management, Customer,
+              and Expert presets — switch with the pills at the top; the active pill sets
+              the Type of Call. Changes apply to the current note and persist only when you
+              hit Save; Save As… copies them into any preset of a new or existing project.
             </li>
             <li>
-              <strong>Append fixed.</strong> Appending to an existing document or master doc
-              no longer breaks bullets into numbered lists, starts on the next page with no
-              blank page, and leaves the target document untouched.
+              <strong>Smarter file names.</strong> Documents save as "Winterberry Group --
+              [Company] [Project] [Type] Call Notes -- [Date]", driven by the new Project
+              Metadata section — where renaming the project name (and hitting Save) renames
+              the project itself. Projects can also be renamed from My Projects.
             </li>
             <li>
-              <strong>Word export fidelity.</strong> All bullets export as real Word list
-              bullets with consistent spacing; takeaways keep their periods, discussion and
-              quant bullets drop trailing ones.
+              <strong>Date &amp; attendees.</strong> Each note gets a Date, [Company] Attendees,
+              and WG Attendees block under the title — set the date, add extra company
+              attendees with +, and tap WG initials.
             </li>
             <li>
-              <strong>Smoother app.</strong> Streaming output no longer jumps, a warning
-              appears if output hits the length limit, and the UI got a visual refresh.
+              <strong>Decluttered.</strong> Meeting Notes is now a collapsible dropdown, and
+              the project files browser and cloud master docs are gone — export a new
+              document or append to a local .docx instead.
             </li>
           </ul>
         </div>

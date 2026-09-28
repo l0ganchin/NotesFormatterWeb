@@ -8,13 +8,15 @@ This folder provides a comprehensive reference for the entire application. It is
 ---
 
 ## What This Application Does
-Notes Formatter Web is an internal tool for a management consulting firm. It takes raw meeting notes and/or transcripts from client interviews, sends them to Claude (Anthropic's AI) for formatting, and produces polished, client-ready documentation in a standardized format. The output includes:
-- A title line with respondent name, role, and company
+Notes Formatter Web is an internal tool for a management consulting firm (Winterberry Group). It takes raw meeting notes and/or transcripts from client interviews, sends them to Claude (Anthropic's AI) for formatting, and produces polished, client-ready documentation in the WG notes template. The output includes:
+- A running header on every page: WG logo + "[Project name]: [Type of Call] Notes" (Management / Customer / Expert)
+- A title line (Word Heading 1, black) with respondent name, role, and company
+- A metadata block: Date, [Company] Attendees, WG Attendees
 - Key Takeaways (4-5 executive-level insights)
 - Discussion section (comprehensive Q&A coverage)
 - Quantitative Scores section (if applicable)
 
-The formatted output can be exported as `.docx` Word documents, saved to cloud-based projects, and merged into master documents that aggregate multiple interviews.
+The formatted output can be exported as a new `.docx` Word document or appended to an existing local `.docx`. Projects store one saved parameter preset per call type (Management / Customer / Expert), switched via pills at the top of the input panel.
 
 ---
 
@@ -40,7 +42,7 @@ The formatted output can be exported as `.docx` Word documents, saved to cloud-b
 |----------|----------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | This file - overview, tech stack, file tree, data flow |
 | [DATA_MODEL.md](DATA_MODEL.md) | Firestore collections, Storage paths, security rules |
-| [SERVICES.md](SERVICES.md) | Service layer: firebase.js, claude.js, export.js, fileStorage.js, projectSharing.js |
+| [SERVICES.md](SERVICES.md) | Service layer: firebase.js, claude.js, export.js, presets.js, projectSharing.js |
 | [COMPONENTS.md](COMPONENTS.md) | All React components: props, state, behavior, relationships |
 | [WORKFLOWS.md](WORKFLOWS.md) | End-to-end user workflows: formatting, exporting, project management |
 
@@ -61,26 +63,28 @@ NotesFormatterWeb/
     App.css                      # Global layout styles
     index.css                    # Base CSS reset/defaults
     assets/
-      logo.png                   # Company logo displayed in header
+      Logo.png                   # WG "wg" mark: app UI header (top left)
+      logo-horizontal-winterberrygroup-red.png  # Full WG lockup (hi-res): embedded in the .docx running header + preview
     contexts/
       AuthContext.jsx             # Auth provider: user state, sign-in/out methods
     services/
       firebase.js                # Firebase init, auth helpers, Firestore CRUD for projects/presets
       claude.js                  # Claude API: prompt building, streaming SSE, response parsing
-      export.js                  # Word doc generation: markdown-to-docx conversion, export/append
-      fileStorage.js             # File CRUD: upload/download/delete with Storage + Firestore metadata
+      export.js                  # Word doc generation: WG template styles, running header, metadata block, export/append
+      presets.js                 # Call-type presets: defaults, WG team roster, migration, normalization
       projectSharing.js          # Project sharing: add/remove members by email
     components/
+      PresetPillNav.jsx/.css     # Call-type pill navigator (Management/Customer/Expert) + Save Preset
+      WGAttendeesPicker.jsx/.css # Chip multi-select of WG team initials
       FileInput.jsx/.css         # Text area with file upload (.docx/.txt) and drag-and-drop
-      RespondentInput.jsx/.css   # Name/Role/Company fields with auto-fill detection
+      RespondentInput.jsx/.css   # Call info: Name/Role/Company, interview date, extra attendees
       PromptSettings.jsx/.css    # Key Takeaways topical guidance (auto-detect vs manual)
       QuantSettings.jsx/.css     # Quantitative score categories (auto-detect vs manual)
       FormatStyleSettings.jsx/.css # Coverage level, detail level, bullets, formality, question format
-      OutputDisplay.jsx/.css     # Output panel: preview/raw toggle, save note, append to master
-      FormattedPreview.jsx/.css  # Live preview renderer (markdown to styled HTML)
-      ExportModal.jsx/.css       # Export dialog: new doc, append to file, append to master doc
+      OutputDisplay.jsx/.css     # Output panel: preview/raw toggle, copy, export
+      FormattedPreview.jsx/.css  # Live preview renderer (markdown to styled HTML, WG template parity)
+      ExportModal.jsx/.css       # Export dialog: new doc, append to local file
       ProjectSelector.jsx/.css   # Project list modal: create, select, delete projects
-      ProjectFiles.jsx/.css      # Project file browser: tabs, upload, download, rename, export all
       ProjectSharing.jsx/.css    # Share project modal: add/remove members by email
       UserMenu.jsx/.css          # Header: sign-in button, user avatar, dropdown, project indicator
       PresetManager.jsx/.css     # Legacy preset management (mostly superseded by projects)
@@ -106,13 +110,13 @@ Meeting Notes  ──┐
 Transcript    ──┘    (claude.js)       (claude-sonnet-4-6)    ──> setOutput()
                                                                     │
 Settings:                                                           v
-- Respondent Info                                           OutputDisplay
-- Takeaways Guidance                                        (preview + raw)
-- Quant Categories                                                  │
-- Coverage/Detail/Formality                                         v
-- Bullet Characters                                    ┌─── Export .docx (local)
-- Discussion Format                                    ├─── Save Note (to project)
-- Custom Instructions                                  └─── Append to Master Doc
+- Call Type pill (preset)                                   OutputDisplay
+- Respondent Info + Date + Attendees                        (preview + raw)
+- Takeaways Guidance                                                │
+- Quant Categories                                                  v
+- Coverage/Detail/Formality                            ┌─── Export new .docx (local)
+- Bullet Characters / Discussion Format                └─── Append to existing .docx (local)
+- Custom Instructions
 ```
 
 ---
@@ -122,12 +126,12 @@ Settings:                                                           v
 ### 1. State Lives in App.jsx
 All formatting-related state (transcript, notes, respondentInfo, all settings) is managed in `App.jsx` and passed down as props. There is no external state management library.
 
-### 2. Project Settings Auto-Save
-When a project is active, settings changes are debounced (1 second) and auto-saved to Firestore via `updateProject()`. When a project is selected, its saved settings are loaded into state.
+### 2. Call-Type Presets with Explicit Save
+Each project stores three presets — Management, Customer, Expert — switched by the pill navigator at the top of the input panel. The active pill is also the "Type of Call" in the exported header. Any parameter can be overridden for the current note; changes persist only when the user hits **Save Preset** (dot-path `updateDoc` of `presets.{callType}`). Switching pills stashes unsaved edits in per-pill drafts so nothing is lost; dirty pills show a dot. Legacy flat-settings projects are migrated lazily (see DATA_MODEL.md).
 
 ### 3. Two Modes: One-Off vs Project
-- **One-off mode**: No project selected. User can format and export locally. No cloud storage.
-- **Project mode**: A project is selected. Enables file browser, save-to-project, master doc management, and sharing.
+- **One-off mode**: No project selected. Pills still choose the call type (with defaults), a plain project-name field feeds the header, and export works locally. Nothing persists.
+- **Project mode**: A project is selected. Presets load from Firestore, Save Preset persists them, and sharing is available.
 
 ### 4. Streaming Output
 The Claude API call uses SSE (Server-Sent Events). The `formatNotes()` function reads the stream, accumulates text, and calls `onChunk()` to update the UI in real-time. Users see output appear progressively. The call runs at temperature 0.3 for run-to-run consistency, and binding style rules are restated after the transcript so long inputs don't wash out the settings.
@@ -143,8 +147,8 @@ Several settings support dual modes:
 
 After formatting, the app parses Claude's output to auto-fill respondent info and quant categories for subsequent runs.
 
-### 6. Firebase Storage + Firestore Metadata
-Files (transcripts, notes, master docs) are stored as `.docx` blobs in Firebase Storage. Each file has a corresponding Firestore document with metadata (fileName, respondentName, storagePath, etc.). Downloads use `getDownloadURL()` + `fetch()` to retrieve files.
+### 6. Deterministic Metadata Injection
+The Date / [Company] Attendees / WG Attendees block and the running header are never asked of the LLM. App.jsx assembles a `noteMeta` object from the inputs and the export layer (and FormattedPreview, via shared helpers `buildMetaRows`/`buildHeaderText`) injects them downstream of the model's markdown. This keeps the LLM contract unchanged and the metadata exact.
 
-### 7. CORS Configuration
-Firebase Storage requires CORS configuration for browser downloads. The `cors.json` file sets `"origin": ["*"]` since download URLs are already token-protected. This must be applied via `gsutil cors set cors.json gs://BUCKET_NAME`.
+### 7. Firebase Storage (retired) & CORS
+File storage (transcripts, formatted notes, cloud master docs) was removed along with the Project Files browser; Firestore now stores only project documents. The `cors.json` / `storage.rules` files remain from that era.

@@ -142,6 +142,7 @@
   flex-shrink: 0;
 }
 
+.rename-project-btn,
 .share-project-btn,
 .delete-project-btn {
   padding: 0.4rem;
@@ -155,14 +156,36 @@
   opacity: 0;
 }
 
+.project-option:hover .rename-project-btn,
 .project-option:hover .share-project-btn,
 .project-option:hover .delete-project-btn {
   opacity: 1;
 }
 
+.rename-project-btn:hover {
+  color: #ccc;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .share-project-btn:hover {
   color: #4dabf7;
   background: rgba(77, 171, 247, 0.1);
+}
+
+.project-rename-input {
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  background: #111;
+  border: 1px solid #E8412A;
+  border-radius: 4px;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.project-rename-input:focus {
+  outline: none;
 }
 
 .delete-project-btn:hover {

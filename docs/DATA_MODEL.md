@@ -27,15 +27,23 @@ Top-level project document. Projects are the primary organizational unit.
 | Field | Type | Description |
 |-------|------|-------------|
 | id | string | Document ID (auto-generated) |
-| name | string | Project display name |
+| name | string | Project name — shown in the project list, the Word running header, and the document title. Linked to the Project Metadata field in the UI: renaming there + Save renames the project |
+| company | string | Client company, used in the exported document title ("Winterberry Group -- [Company] [Project] [Type] Call Notes -- DD Month YYYY") |
 | userId | string | Creator's UID (legacy field) |
 | ownerId | string | Owner's UID |
 | members | string[] | Array of member UIDs (includes owner) |
 | createdAt | Timestamp | Creation time |
 | updatedAt | Timestamp | Last update time |
-| takeawaysGuidance | string | Saved Key Takeaways topical guidance text |
-| takeawayPreset | string | "customer" or "management" |
-| quantCategories | array | Saved quant categories `[{name, scale}]` |
+| presets | map | `{ management, customer, expert }` — one saved parameter set per call type (see below) |
+
+Each entry in `presets` holds the full parameter set for that call type:
+
+| Preset field | Type | Description |
+|-------|------|-------------|
+| takeawaysGuidance | string | Key Takeaways topical guidance text ("" = auto-detect) |
+| takeawayPreset | string | "customer", "management", or "auto" |
+| detailLevel | string | Takeaway detail level (e.g., "balanced") |
+| quantCategories | array | Quant categories `[{name, scale}]` ([] = auto-detect) |
 | includeImportance | boolean | Include an `Importance:` rating line before each quant Score (N/A when not asked) |
 | coverageLevel | string | "focused", "thorough", or "exhaustive" |
 | takeawayBullet | string | Bullet character for takeaways |
@@ -43,77 +51,17 @@ Top-level project document. Projects are the primary organizational unit.
 | formality | string | "standard" or "formal" |
 | discussionQuestionFormat | string | "questions" or "statements" |
 | customStyleInstructions | string | Free-text custom style instructions |
+| projectContext | string | Who-is-who / focus context passed to the prompt |
+| wgAttendees | string[] | Selected WG team initials for the "WG Attendees:" line |
+
+Presets are only written when the user hits **Save Preset** (no auto-save). Legacy projects that still carry the old flat settings fields (takeawaysGuidance etc. directly on the doc) are migrated lazily on first load: all three presets are seeded from the flat fields and written back via `migrateProjectToPresets()` in `services/presets.js`. The flat fields are left in place but are no longer read or written.
 
 **Security**: Any authenticated user can create. Read/update/delete requires `request.auth.uid` to be in `members[]` or equal to `userId`.
 
 ---
 
-### `projects/{projectId}/transcripts/{transcriptId}`
-Metadata for uploaded transcript files.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| fileName | string | Display filename (e.g., "Bobby_CEO_Acme_Transcript.docx") |
-| respondentName | string | Respondent name |
-| respondentRole | string | Respondent role/title |
-| respondentCompany | string | Respondent company |
-| uploadedBy | string | UID of uploader |
-| uploadedByName | string | Display name of uploader |
-| createdAt | Timestamp | Upload time |
-| storagePath | string | Firebase Storage path (e.g., "projects/abc/transcripts/xyz.docx") |
-| fileSizeBytes | number | File size in bytes |
-
----
-
-### `projects/{projectId}/formattedNotes/{noteId}`
-Metadata for saved formatted note files.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| fileName | string | Display filename (e.g., "Bobby_CEO_Acme_Notes_2025-01-15.docx") |
-| respondentName | string | Respondent name |
-| respondentRole | string | Respondent role/title |
-| respondentCompany | string | Respondent company |
-| sourceTranscriptId | string | ID of source transcript (if applicable) |
-| createdBy | string | UID of creator |
-| createdByName | string | Display name of creator |
-| createdAt | Timestamp | Creation time |
-| storagePath | string | Firebase Storage path |
-| fileSizeBytes | number | File size in bytes |
-
----
-
-### `projects/{projectId}/masterDocs/{masterDocId}`
-Metadata for master documents (aggregated multi-interview docs).
-
-| Field | Type | Description |
-|-------|------|-------------|
-| name | string | Master document display name (without .docx) |
-| fileName | string | Sanitized filename with .docx extension |
-| createdBy | string | UID of creator |
-| createdByName | string | Display name of creator |
-| createdAt | Timestamp | Creation time |
-| updatedAt | Timestamp | Last update (last append) |
-| lastAppendedBy | string | UID of last user to append |
-| appendCount | number | Number of notes appended (starts at 1 on creation) |
-| storagePath | string | Firebase Storage path |
-| fileSizeBytes | number | Current file size in bytes |
-
----
-
-## Firebase Storage Paths
-
-All files are stored under the `projects/` prefix:
-
-```
-projects/{projectId}/transcripts/{transcriptId}.docx
-projects/{projectId}/formattedNotes/{noteId}.docx
-projects/{projectId}/masterDocs/{masterDocId}.docx
-```
-
-**Download method**: `getDownloadURL()` returns a signed URL, then `fetch()` retrieves the blob. This requires CORS to be configured on the storage bucket (see `cors.json`).
-
-**Security**: Storage rules cross-reference Firestore to check project membership. Requires Firebase Blaze plan for `firestore.get()` in storage rules.
+### `projects/{projectId}/transcripts | formattedNotes | masterDocs` (retired)
+These subcollections (and their Firebase Storage blobs under `projects/{projectId}/...`) belonged to the removed Project Files browser and cloud master-doc feature. No code reads or writes them anymore; existing documents are orphaned but harmless. The Firestore/Storage rules for them remain in place.
 
 ---
 

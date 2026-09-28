@@ -100,41 +100,64 @@ Reads the SSE stream, parses `content_block_delta` events, accumulates text, and
 ---
 
 ## `src/services/export.js`
-Word document (.docx) generation from Claude's markdown output.
+Word document (.docx) generation from Claude's markdown output, in the WG notes template.
 
 ### `DEFAULT_CONFIG`
-Default styling configuration for generated documents:
+Default styling configuration for generated documents (matches the WG template):
 ```
-title:              Aptos 14pt, color #0F4761
-section_header:     Calibri 11pt, bold, underline
-takeaway_bullet:    Calibri 11pt, bullet char, 0.5in indent
-discussion_question: Calibri 11pt, bold, italic
-discussion_bullet:  Calibri 11pt, bullet char, 0.5in indent
-quant_header:       Calibri 11pt, bold, italic
-quant_category:     Calibri 11pt, bold
-quant_bullet:       Calibri 11pt, bullet char, 0.5in indent
+title:              Open Sans 14pt, bold, black (real Heading 1 style)
+meta:               Open Sans 12pt (Date / Attendees block, bold labels)
+section_header:     Open Sans 12pt, bold, underline
+takeaway_bullet:    Open Sans 12pt, bullet char, 0.5in indent
+discussion_question: Open Sans 12pt, bold, italic
+discussion_bullet:  Open Sans 12pt, bullet char, 0.5in indent
+quant_header:       Open Sans 12pt, bold, italic
+quant_category:     Open Sans 12pt, bold
+quant_bullet:       Open Sans 12pt, bullet char, 0.5in indent
+running_header:     Segoe UI 12pt, bold
 ```
 
-### `parseMarkdownToDocx(markdownText, config, isAppend)`
+### Spacing (`BODY_SPACING` / `SPACING`)
+Every paragraph gets the template values as direct formatting: space After 8pt (160 twips), line spacing Multiple 1.16 (`line: 278, lineRule: AUTO`), contextualSpacing off. Direct formatting (not just styles.xml) is deliberate — it survives merges into documents whose own styles differ. `buildDocxBlob` also embeds matching `Document.styles` defaults plus a black Open Sans Heading 1 override, so the title shows in Word's navigation pane without the stock blue.
+
+### Running header (`createRunningHeader`)
+When a `noteMeta` object is provided, the document gets a default header on every page: bold Segoe UI 12pt text `"[Project name]: [Type of Call] Notes"` left, and the full WG lockup logo (`src/assets/logo-horizontal-winterberrygroup-red.png`, embedded via `ImageRun`, 44px display height) pushed flush right by a right tab stop at 6.5". The logo is imported with Vite's `?inline` suffix (bundled as a base64 data URL) and decoded synchronously in `getLogo()` — no runtime fetch, so the image can never be dropped by a failed asset request. Its pixel dimensions are read from the PNG's IHDR chunk so swapping the asset rescales automatically (30px display height). `buildHeaderText(noteMeta)` is exported and shared with the preview.
+
+### Metadata block (`buildMetaRows` / `createMetaParagraphs`)
+Directly under the title, three lines with bold labels are injected deterministically (never asked of the LLM): `Date:` (formatted from the date input, built from split Y/M/D parts to avoid the UTC-parse off-by-one), `[Company] Attendees:` (respondent name + extra attendees; label falls back to "Company"), and `WG Attendees:` (selected initials). All three rows always emit — an empty value leaves the line ready to fill in Word. `buildMetaRows(noteMeta)` is exported and shared with FormattedPreview so preview and export can't drift.
+
+### `noteMeta` shape
+```
+{ projectName, company, callType: 'management'|'customer'|'expert', interviewDate: 'YYYY-MM-DD',
+  respondentName, companyLabel, extraAttendees: string[], wgAttendees: string[] }
+```
+Assembled in App.jsx from the active pill + project metadata + call info inputs. When `noteMeta` is null (legacy callers), the doc has no header and no metadata block. (`company` is the project-level client company for the doc title; `companyLabel` is the respondent's company for the Attendees line.)
+
+### Document title (`buildDocumentTitle`)
+`"Winterberry Group -- [Company] [Project] [Type] Call Notes -- DD Month YYYY"` — company/project from project metadata, type from the active pill, date from the date input (empty parts drop out). Used as the new-document filename (sanitized + `.docx`), shown in the ExportModal, and set as the docx core `title` property.
+
+### `parseMarkdownToDocx(markdownText, config, noteMeta)`
 Core conversion function. Parses Claude's markdown output line-by-line and creates `docx` library Paragraph/TextRun objects. Handles:
-- `### Title` lines → Heading 2
+- `### Title` lines → Heading 1 (black, Open Sans 14 bold), followed by the injected metadata block
 - `**Key Takeaways:**` → Underlined bold section header
 - `**Discussion:**` → Underlined bold section header
 - `***Question text***` → Bold italic paragraph
 - Bullet lines (`- `, `* `, or legacy glyphs `•●○■➢–` via `BULLET_LINE_RE`) → native Word list bullets
 - `**Category Name**` in quant section → Bold category header
 - `**Score:**` / `**Reason:**` → native list bullet with bold label run + value (same list as other quant bullets)
-- Page break prefix when `isAppend = true`
 
-All paragraph spacing comes from the `SPACING` constant — every bullet in every section uses the same spacing, and headers/questions/categories each have one canonical value.
+If no title line is found, the metadata block is prepended at the top instead.
 
-### `buildDocxBlob(markdownText, config, isAppend)`
-The ONLY correct way to turn formatted output into a .docx blob. Always includes the numbering config (bullet list definitions) and 1" margins. All callers (exportToWord, OutputDisplay Save Note / master-doc append, ExportModal master-doc append) go through this — building a `Document` without the numbering config silently breaks bullets in Word.
+### `buildExportConfig({ takeawayBullet, discussionBullet })`
+The one place per-user options become an export config (bullet glyphs over `DEFAULT_CONFIG`). All callers use this instead of hand-spreading `DEFAULT_CONFIG`.
+
+### `buildDocxBlob(markdownText, config, noteMeta)`
+The ONLY correct way to turn formatted output into a .docx blob. Always includes the numbering config (bullet list definitions), the template `Document.styles`, and 1" margins; adds the running header when `noteMeta` is present. Building a `Document` without the numbering config silently breaks bullets in Word.
 
 ### `exportToWord(markdownText, options)`
-Exports the formatted output to a .docx file. Two modes:
-- **New document**: Creates fresh .docx, saves as `Name_Role_Company_Notes_YYYY-MM-DD.docx`
-- **Append to existing**: Reads existing .docx, builds merge-compatible content, injects it via `mergeDocxBlobs()`, saves as `originalname_updated.docx`
+Exports the formatted output to a .docx file. Options: `{ mode, existingFile, config, respondentInfo, noteMeta }`. Two modes:
+- **New document**: Creates fresh .docx, saved under the document title (`buildDocumentTitle`); falls back to `Name_Role_Company_Notes_YYYY-MM-DD.docx` when no `noteMeta`
+- **Append to existing**: Reads existing .docx, builds merge-compatible content, injects it via `mergeDocxBlobs()`, saves as `originalname_updated.docx`. The appended note's own header is dropped by the merge (headers live in the stripped `sectPr`), so the target document's header — or lack of one — always wins.
 
 ### `mergeDocxBlobs(existingArrayBuffer, appendArrayBuffer)` (src/services/docxMerge.js)
 Appends generated content into an existing .docx by unzipping it (JSZip) and inserting the new body XML just before the document's closing section properties, preceded by exactly one page break — so the appended text starts on the page after the existing text with no blank page between.
@@ -154,34 +177,25 @@ This replaced `docx-merger`, which renamed merged list definitions WITHOUT updat
 
 ---
 
-## `src/services/fileStorage.js`
-File CRUD operations combining Firebase Storage (for file blobs) and Firestore (for metadata).
+## `src/services/presets.js`
+Call-type presets and defaults (see DATA_MODEL.md for the stored shape).
 
-### Functions
-| Function | Description |
+### Exports
+| Export | Description |
 |----------|-------------|
-| `uploadTranscript(projectId, file, metadata)` | Uploads .docx to Storage, creates Firestore metadata in `transcripts` subcollection |
-| `uploadFormattedNote(projectId, docxBlob, metadata)` | Uploads formatted note .docx, creates metadata in `formattedNotes` subcollection |
-| `createMasterDoc(projectId, name, initialDocxBlob, metadata)` | Creates new master doc in Storage + `masterDocs` subcollection |
-| `appendToMasterDoc(projectId, masterDocId, noteDocxBlob, userId)` | Downloads existing master doc, injects the note via `mergeDocxBlobs()` (export.js), re-uploads, updates metadata |
-| `downloadFile(storagePath)` | Gets download URL via `getDownloadURL()`, fetches blob via `fetch()` |
-| `deleteFile(projectId, subcollection, docId)` | Deletes Storage blob + Firestore metadata |
-| `getProjectFiles(projectId, subcollection)` | Lists all files in subcollection, ordered by createdAt desc |
-| `renameFile(projectId, subcollection, docId, newName)` | Updates fileName in Firestore; also updates `name` field for masterDocs |
+| `PRESET_KEYS` / `CALL_TYPE_LABELS` | `['management','customer','expert']` and their display labels (also the "Type of Call" in the Word header) |
+| `WG_TEAM` | Canonical roster of WG initials for the WG Attendees picker; output always follows this order |
+| `MANAGEMENT_TAKEAWAYS_GUIDANCE` | Management takeaways template (single source of truth; also used by PromptSettings' examples dropdown) |
+| `buildDefaultPreset(callType)` | Per-type defaults: management → management guidance/preset, customer → customer template, expert → auto-detect |
+| `normalizePreset(preset, callType)` | Returns exactly the known preset fields in canonical key order (missing keys filled from defaults) — dirty checks rely on this ordering for `JSON.stringify` comparison |
+| `buildAllDefaultPresets()` | `{ management, customer, expert }` defaults (seeds new projects) |
+| `migrateProjectToPresets(project)` | Seeds all three presets from a legacy project's flat settings fields |
+| `todayISO()` | Local-time `YYYY-MM-DD` for the date input default (avoids the UTC off-by-one of `toISOString()`) |
 
-### Storage Path Convention
-```
-projects/{projectId}/transcripts/{transcriptId}.docx
-projects/{projectId}/formattedNotes/{noteId}.docx
-projects/{projectId}/masterDocs/{masterDocId}.docx
-```
+---
 
-### Master Doc Append Flow
-1. Fetch existing master doc: `getDownloadURL()` → `fetch()` → `arrayBuffer()`
-2. Convert new note to `arrayBuffer()` (note must be built merge-compatible)
-3. Inject via `mergeDocxBlobs()` — master's own styles/lists untouched, one page break before the note
-4. Upload merged blob back to same Storage path (overwrite)
-5. Update Firestore metadata (appendCount, fileSizeBytes, updatedAt)
+## `src/services/fileStorage.js` (removed)
+Deleted along with the Project Files browser and the cloud master-doc feature. Exporting now only produces standalone .docx downloads or appends to a local file the user picks. The retired Firestore subcollections and Storage paths are documented in DATA_MODEL.md.
 
 ---
 

@@ -10,46 +10,56 @@ Main application shell. Manages all formatting-related state, layout (resizable 
 - `AppContent` contains all the logic
 
 ### Key State
+
+**Per-note state** (never saved to a preset):
 | State | Type | Default | Description |
 |-------|------|---------|-------------|
 | transcript | string | '' | Raw transcript text |
 | notes | string | '' | Raw meeting notes text |
 | respondentInfo | object | {name:'', role:'', company:''} | Respondent details |
 | respondentManuallyEdited | boolean | false | Whether user manually edited respondent fields |
-| takeawaysGuidance | string | DEFAULT_TAKEAWAYS_GUIDANCE | Topical guidance for key takeaways |
-| takeawayPreset | string | 'customer' | Preset type: 'customer' or 'management' |
-| detailLevel | string | 'balanced' | Detail per takeaway bullet |
-| quantCategories | array | [] | Manual quant categories [{name, scale}] |
-| coverageLevel | string | 'exhaustive' | Output exhaustiveness |
-| takeawayBullet | string | U+2022 | Bullet character for takeaways |
-| discussionBullet | string | U+2022 | Bullet character for discussion |
-| formality | string | 'standard' | 'standard' (1st person) or 'formal' (3rd person) |
-| discussionQuestionFormat | string | 'questions' | 'questions' or 'statements' |
-| customStyleInstructions | string | 'Please be exhaustive...' | Free-text style instructions |
+| interviewDate | string | today (local) | `YYYY-MM-DD` for the "Date:" line |
+| extraAttendees | string[] | [] | Additional names for the "[Company] Attendees:" line |
 | output | string | '' | Formatted output (markdown) |
-| isLoading | boolean | false | Whether formatting is in progress |
-| error | string | '' | Error message |
-| currentProject | object/null | null | Currently selected project |
-| leftPanelWidth | number | 50 | Left panel width as percentage (persisted to localStorage) |
+| isLoading / error / warning | | | Formatting status |
+
+**Preset-scoped state** (one `useState` each; saved per call type via Save Preset): `takeawaysGuidance`, `takeawayPreset`, `detailLevel`, `quantCategories`, `includeImportance`, `coverageLevel`, `takeawayBullet`, `discussionBullet`, `formality`, `discussionQuestionFormat`, `customStyleInstructions`, `projectContext`, `wgAttendees`.
+
+**Preset navigation state**:
+| State | Type | Description |
+|-------|------|-------------|
+| activeCallType | string | 'management' \| 'customer' \| 'expert' — the active pill, also the header's Type of Call (default 'customer') |
+| presetDrafts | object | Per-pill snapshots of unsaved edits, stashed on pill switch so switching never loses work |
+| savedPresets | object | Mirror of what Firestore last had (dirty checks compare against this) |
+| projectName | string | Linked to the project's actual `name` — editing it + Save renames the project. Feeds the Word header and doc title |
+| company | string | Project-level client company for the doc title (edited in Project Metadata, saved with Save) |
+| currentProject | object/null | Currently selected project |
+| leftPanelWidth | number | Left panel width as percentage |
 
 ### Key Behaviors
 - **handleFormat()**: Validates inputs, creates AbortController, calls `formatNotes()` with streaming. On completion, auto-detects respondent info and quant categories from output.
 - **handleStop()**: Aborts the in-flight request via AbortController.
-- **handleReset()**: Clears all inputs, output, and errors. Clicking the header logo triggers this.
-- **handleExport()**: Opens ExportModal with custom bullet config.
-- **Project settings auto-save**: When `currentProject` is set, a debounced (1s) `useEffect` saves all settings to Firestore.
-- **Project settings load**: When `currentProject` changes, all settings are loaded from the project object.
+- **handleReset()**: Clears per-note inputs, output, and errors; date resets to today; custom style/context revert to the active pill's saved values. Clicking the header logo triggers this.
+- **handleCallTypeChange()**: Snapshots the current values into `presetDrafts[oldPill]`, then applies `presetDrafts[newPill] ?? savedPresets[newPill]` into the form.
+- **handleSavePreset()**: Explicit save (replaces the old debounced auto-save). Writes `presets.{activeCallType}` (dot-path `updateDoc`) + `projectName` to Firestore, syncs `savedPresets`, flashes "Saved ✓".
+- **Project load** (keyed on project id via a ref guard): reads `currentProject.presets`, or migrates legacy flat settings via `migrateProjectToPresets()` with a one-time write-back; resets drafts; applies the active pill's preset.
+- **Dirty tracking**: `JSON.stringify` comparison of normalized presets (canonical key order via `normalizePreset`); dirty pills show a dot, and an edited `projectName` marks the active pill dirty.
+- **noteMeta**: `{ projectName, callType, interviewDate, respondentName, companyLabel, extraAttendees, wgAttendees }` assembled per render, passed to OutputDisplay (preview) and `exportToWord`.
 - **Resizable panels**: Mouse drag on `.panel-resizer` adjusts `leftPanelWidth`, persisted to localStorage.
 
 ### Layout
 ```
 ┌─── Header (logo + h1 | UserMenu) ───────────────────┐
 ├─── Input Panel (leftPanelWidth%) ─┬── Resizer ─┬── Output Panel ──┤
-│  ProjectFiles (if project active) │   8px bar   │  OutputDisplay   │
-│  RespondentInput                  │             │                  │
-│  FileInput (Meeting Notes)        │             │                  │
+│  PresetPillNav (pills + Save/As)  │   8px bar   │  OutputDisplay   │
+│  ProjectMetadata (collapsible)    │             │                  │
+│  RespondentInput (Call Info)      │             │                  │
+│  WGAttendeesPicker                │             │                  │
 │  FileInput (Transcript)           │             │                  │
 │  Custom Style Instructions        │             │                  │
+│  Project Context                  │             │                  │
+│  FileInput (Meeting Notes,        │             │                  │
+│    collapsible)                   │             │                  │
 │  PromptSettings                   │             │                  │
 │  QuantSettings                    │             │                  │
 │  FormatStyleSettings              │             │                  │
@@ -82,13 +92,14 @@ A text area with file upload and drag-and-drop support. Used twice in the input 
 - `.docx` files are parsed to plain text using `mammoth.extractRawText()`
 - `.doc` (old format) shows error: not supported
 - "Clear" button appears when there's content
+- `collapsible` prop (used for the optional Meeting Notes): renders as a dropdown-style toggle, collapsed by default, with an "Added" badge when it holds text
 
 ---
 
 ## `src/components/RespondentInput.jsx`
 
 ### Responsibility
-Three input fields for respondent Name, Role, and Company. Supports auto-fill from Claude's output or manual entry.
+"Call Info" section: respondent Name/Role/Company fields (auto-fill or manual), interview date, and additional company attendees.
 
 ### Props
 | Prop | Type | Description |
@@ -97,6 +108,10 @@ Three input fields for respondent Name, Role, and Company. Supports auto-fill fr
 | onChange | function(object) | Callback with updated {name, role, company} |
 | onClear | function | Resets to empty and clears manual edit flag |
 | isManuallyEdited | boolean | Whether user has manually typed in fields |
+| interviewDate | string | `YYYY-MM-DD` for the note's "Date:" line |
+| onInterviewDateChange | function(string) | Updates the date |
+| extraAttendees | string[] | Additional company attendee names |
+| onExtraAttendeesChange | function(array) | Updates the extra attendees |
 
 ### Behavior
 - Shows "Auto-filled" badge when populated by the system
@@ -104,6 +119,8 @@ Three input fields for respondent Name, Role, and Company. Supports auto-fill fr
 - "Clear" button resets all fields and clears the manual edit flag
 - When the user types in any field, the parent sets `respondentManuallyEdited = true`
 - When manually edited, the exact info is passed to Claude's prompt to override auto-detection
+- **"+ Attendee"** adds an editable extra-name row (each with a × remove button); name + extras fill the "[Company] Attendees:" line in the export
+- **Date input** (`<input type="date">`) defaults to today, resets to today on app reset
 
 ---
 
@@ -227,7 +244,7 @@ Collapsible section with all format and style options.
 ## `src/components/OutputDisplay.jsx`
 
 ### Responsibility
-Displays formatted output with preview/raw toggle, streaming indicator, and post-formatting actions (save note, append to master doc).
+Displays formatted output with preview/raw toggle and streaming indicator.
 
 ### Props
 | Prop | Type | Description |
@@ -237,29 +254,16 @@ Displays formatted output with preview/raw toggle, streaming indicator, and post
 | onExportWord | function | Opens ExportModal |
 | takeawayBullet | string | For preview rendering |
 | discussionBullet | string | For preview rendering |
-| currentProject | object/null | Active project (enables save actions) |
-| user | object/null | Authenticated user |
-| respondentInfo | object | For generating filenames |
-| transcript | string | (unused currently, passed for future use) |
-| notes | string | (unused currently, passed for future use) |
+| noteMeta | object/null | Header + metadata values, passed through to FormattedPreview |
 
 ### Display States
 One stable layout across all states (header with toggle/Copy/Export always rendered; buttons disabled when not applicable) so the chrome never jumps when streaming starts or ends:
 1. **Loading, no content**: Shimmering skeleton lines + rotating status messages (crossfade); spinner + tabular-nums timer in the header
 2. **Loading, with content (streaming)**: Preview with `isStreaming` (incomplete tail line held back, rendered dimmed with a blinking caret); animated shimmer bar under the header; auto-scroll follows the stream only while the user is pinned to the bottom
 3. **Empty**: "Formatted notes will appear here"
-4. **Content ready**: Preview/Raw toggle, Copy button (shows "Copied ✓" feedback), Export .docx button, save-to-project bar
+4. **Content ready**: Preview/Raw toggle, Copy button (shows "Copied ✓" feedback), Export .docx button
 
 Streaming UI updates are throttled to a 100ms cadence in App.jsx (`onChunk` buffers into a ref, flushed on a timer) so bursts of chunks render smoothly.
-
-### Post-Formatting Actions (project mode only)
-1. **Save Note**: Converts output to .docx via `buildDocxBlob()`, uploads via `uploadFormattedNote()`. Filename: `Name_Role_Company_Notes_YYYY-MM-DD.docx`
-2. **Append to Master Doc**: Opens inline picker that:
-   - Loads existing master docs from `getProjectFiles(projectId, 'masterDocs')`
-   - If master docs exist: shows list to select + "Append" button + "+ New Master Doc" button
-   - If no master docs: shows create form with name input + "Create & Add Note" button
-   - Appending: builds note blob, calls `appendToMasterDoc()`
-   - Creating: builds note blob, calls `createMasterDoc()`
 
 ### Loading Messages (rotate every 4 seconds)
 1. "Reading through the transcript..."
@@ -275,7 +279,7 @@ Streaming UI updates are throttled to a 100ms cadence in App.jsx (`onChunk` buff
 ## `src/components/FormattedPreview.jsx`
 
 ### Responsibility
-Renders Claude's markdown output as styled HTML for the preview mode in OutputDisplay.
+Renders Claude's markdown output as styled HTML for the preview mode in OutputDisplay, mirroring the WG .docx template (Open Sans 12pt, 1.16 line spacing, 8pt after each paragraph — see FormattedPreview.css header comment).
 
 ### Props
 | Prop | Type | Description |
@@ -283,10 +287,13 @@ Renders Claude's markdown output as styled HTML for the preview mode in OutputDi
 | content | string | Markdown text to render |
 | takeawayBullet | string | Bullet character for takeaway items |
 | discussionBullet | string | Bullet character for discussion items |
+| isStreaming | boolean | Holds back the incomplete last line during streaming |
+| noteMeta | object/null | Renders the running-header bar and Date/Attendees block |
 
 ### Behavior
 Parses markdown line-by-line (mirrors the logic in `export.js`) and returns React elements:
-- `### Title` → `<h3 className="preview-title">`
+- A `.preview-doc-header` bar at the top (Segoe UI header text + WG logo) rendered from `noteMeta` via the shared `buildHeaderText()`
+- `### Title` → `<h3 className="preview-title">` (black, bold), followed by the Date / [Company] Attendees / WG Attendees lines from the shared `buildMetaRows()` (bold labels)
 - `**Key Takeaways:**` → `<h4 className="preview-section-header">`
 - `***Question***` → `<p className="preview-question">`
 - `- Bullet` → `<p className="preview-bullet">` with appropriate bullet character
@@ -298,25 +305,73 @@ Parses markdown line-by-line (mirrors the logic in `export.js`) and returns Reac
 ## `src/components/ExportModal.jsx`
 
 ### Responsibility
-Modal dialog for exporting formatted output to Word documents with three modes.
+Modal dialog for exporting formatted output to Word documents.
 
 ### Props
 | Prop | Type | Description |
 |------|------|-------------|
 | isOpen | boolean | Whether modal is visible |
 | onClose | function | Close handler |
-| onExport | function({mode, existingFile}) | Export callback from App.jsx |
-| currentProject | object/null | Active project (enables master doc mode) |
-| user | object/null | Authenticated user |
-| respondentInfo | object | For metadata |
-| output | string | Formatted markdown |
-| takeawayBullet | string | For docx generation |
-| discussionBullet | string | For docx generation |
+| onExport | function({mode, existingFile}) | Export callback from App.jsx (which supplies config + noteMeta to `exportToWord`) |
+| documentTitle | string | Computed document title, shown as "Saves as: ….docx" in new-document mode |
 
-### Three Export Modes
-1. **Create New Document**: Downloads fresh .docx file to browser
-2. **Append to Existing**: User selects a .docx file from their computer; output is merged after existing content using `docx-merger`
-3. **Append to Master Doc** (project mode only): Shows project's master doc list, select one to append to, or create a new master doc
+### Two Export Modes
+1. **Create New Document**: Downloads fresh .docx file to browser (full WG template incl. running header), named by the document title
+2. **Append to Existing**: User selects a .docx file from their computer; output is merged after existing content via `mergeDocxBlobs()`. A hint notes that the target document's header is the one that survives an append
+
+---
+
+## `src/components/PresetPillNav.jsx`
+
+### Responsibility
+Top-of-panel segmented pill navigator (compact, fit-content) for the three call-type presets + Save and Save As buttons.
+
+### Props
+| Prop | Type | Description |
+|------|------|-------------|
+| activeCallType | string | Active pill |
+| onChange | function(key) | Pill switch (App stashes/loads drafts) |
+| dirtyByType | object | Per-pill unsaved-changes flags (dot indicator); passed empty in one-off mode |
+| isProjectMode | boolean | Shows the Save button only when a project is active |
+| onSave / isSaving / justSaved | | Save button wiring ("Saved ✓" flash) |
+| canSaveAs | boolean | Shows the "Save As…" button (any signed-in user, one-off mode included) |
+| onSaveAs | function | Opens SavePresetAsModal |
+
+---
+
+## `src/components/SavePresetAsModal.jsx`
+
+### Responsibility
+"Save As" dialog: copies the current parameters into any call-type slot of a new or existing project.
+
+### Props
+| Prop | Type | Description |
+|------|------|-------------|
+| isOpen / onClose | | Modal wiring |
+| onSave | async function({project, newProjectName, callType}) | App's `handleSaveAs` performs the writes; the modal surfaces errors |
+| user | object | Signed-in user (project list fetch) |
+| currentProjectId | string/null | Pre-selects the current project and tags it "current" |
+| defaultCallType | string | Pre-selects the active pill's call type |
+
+### Behavior
+- On open: fetches the user's projects (`getUserProjects`, sorted by updatedAt desc), resets choices
+- Destination: "+ New project" (with name input) or an existing project row
+- Call-type pills choose which preset slot to write; a hint warns that saving overwrites an existing project's slot
+- App's `handleSaveAs`: **new project** → `createProject` seeded with defaults + the chosen slot, then switches into it on that pill (form values unchanged); **existing project** → dot-path preset write (legacy flat-settings projects get fully migrated first so a partial presets map can't shadow their old settings); saving into the currently open project syncs `savedPresets` in place
+
+---
+
+## `src/components/ProjectMetadata.jsx`
+
+### Responsibility
+Collapsible section under the pills holding the project-level metadata shared by all three presets: **Project Name** (blue + bold — it's linked to the project's actual `name`; renaming it and hitting Save renames the project) and **Company**. Both feed the exported document title; Project Name also fills the Word running header. The collapsed toggle shows a "Company · Project" summary. Persisted by the Save button (and carried into new projects by Save As); in one-off mode the values are freeform.
+
+---
+
+## `src/components/WGAttendeesPicker.jsx`
+
+### Responsibility
+Chip multi-select of the WG team initials (roster in `services/presets.js` `WG_TEAM`) for the "WG Attendees:" line. Selection is stored in canonical roster order regardless of click order; Clear button empties it. Bound to the preset-scoped `wgAttendees` state.
 
 ---
 
@@ -340,49 +395,9 @@ Modal overlay for project management: list, create, select, delete projects.
 - Shows "One-off Mode" option at top (no project, quick formatting)
 - Lists all projects where user is a member (sorted by updatedAt desc)
 - Each project shows name, creation date, member count
-- Action buttons: share (people icon), delete (trash icon)
-- "New Project" button shows inline creation form
+- Action buttons: rename (pencil, inline input — Enter/blur confirms, Escape cancels; calls `onProjectRenamed` so App syncs the active project), share (people icon), delete (trash icon)
+- "New Project" button shows inline creation form; new projects are seeded with `company: ''` and the three default presets (`buildAllDefaultPresets()`)
 - Auto-migrates legacy presets on first load
-
----
-
-## `src/components/ProjectFiles.jsx`
-
-### Responsibility
-Collapsible file browser panel shown in the input panel when a project is active. Three tabs for transcripts, notes, and master docs.
-
-### Props
-| Prop | Type | Description |
-|------|------|-------------|
-| projectId | string | Active project ID |
-| isOpen | boolean | Whether panel is expanded |
-| onToggle | function | Toggle expand/collapse |
-| user | object | Authenticated user |
-| transcript | string | Current transcript text (for "Save Current Input") |
-| notes | string | Current notes text (for "Save Current Input") |
-| respondentInfo | object | For generating filenames |
-
-### Tabs
-| Tab | Subcollection | Tab Actions |
-|-----|--------------|-------------|
-| Transcripts | `transcripts` | Upload File, Save Current Input (if text exists), Export All |
-| Notes | `formattedNotes` | Export All |
-| Master Docs | `masterDocs` | New Master Doc, Export All |
-
-### Features
-1. **Upload File** (transcripts tab): File picker for .docx/.txt/.doc, uploads via `uploadTranscript()`
-2. **Save Current Input** (transcripts tab): Converts current transcript/notes text to .docx, uploads as transcript. Filename: `Name_Role_Company_Transcript.docx`
-3. **Export All** (all tabs): Downloads all files in current tab individually with 500ms delays between downloads
-4. **New Master Doc** (master tab): Inline form to create empty master document with title
-5. **Rename** (all files): Pencil icon → inline input replaces filename → Enter to confirm, Escape to cancel
-6. **Download** (all files): Downloads individual file via `downloadFile()` + `saveAs()`
-7. **Delete** (all files): Confirmation prompt → deletes Storage file + Firestore metadata
-8. **Resizable panel**: Drag handle at bottom adjusts file list height (80-600px), persisted to localStorage
-
-### File Row Display
-- Filename (or inline rename input)
-- Metadata: respondent name, uploaded/created by, date, file size
-- Action buttons: rename (pencil), download (arrow), delete (trash)
 
 ---
 
@@ -420,9 +435,8 @@ Header component showing sign-in button (when unauthenticated) or user avatar wi
 
 ### Behavior
 - **Unauthenticated**: Shows "Sign in with Microsoft" button (primary auth method) + "My Projects" button (triggers sign-in first)
-- **Authenticated**: Shows active project indicator (if any), "My Projects" button, user avatar with dropdown
+- **Authenticated**: Shows a "Share" button when a project is active (opens ProjectSharing for it), "My Projects" button, user avatar with dropdown
 - Dropdown: user name, email, sign out button
-- Active project indicator: folder icon + project name, clickable to open ProjectSelector
 
 ---
 
@@ -459,3 +473,6 @@ Legacy preset management component from before the projects system. Preset funct
 
 ### `ProjectStatusBar.jsx`
 Legacy status bar component. Not currently rendered in the app.
+
+### `ProjectFiles.jsx` (deleted)
+The project file browser (transcripts / formatted notes / master docs tabs) was removed along with the cloud master-doc feature and `services/fileStorage.js`. The retired Firestore subcollections are documented in DATA_MODEL.md.

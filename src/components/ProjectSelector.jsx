@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { getUserProjects, createProject, deleteProject, migrateLegacyPresets } from '../services/firebase'
+import { getUserProjects, createProject, deleteProject, updateProject, migrateLegacyPresets } from '../services/firebase'
+import { buildAllDefaultPresets } from '../services/presets'
 import './ProjectSelector.css'
 
-function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onOneOffMode, onOpenSharing }) {
+function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onOneOffMode, onOpenSharing, onProjectRenamed }) {
   const { user, isAuthenticated } = useAuth()
   const [projects, setProjects] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -11,6 +12,8 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
   const [newProjectName, setNewProjectName] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
+  const [renamingId, setRenamingId] = useState(null)
+  const [renameValue, setRenameValue] = useState('')
 
   useEffect(() => {
     if (isOpen && isAuthenticated && user) {
@@ -54,8 +57,8 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
     try {
       const project = await createProject(user.uid, {
         name: newProjectName.trim(),
-        takeawaysGuidance: '',
-        quantCategories: [],
+        company: '',
+        presets: buildAllDefaultPresets(),
       })
 
       await loadProjects()
@@ -96,6 +99,36 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
   const handleShareClick = (project, e) => {
     e.stopPropagation()
     onOpenSharing?.(project)
+  }
+
+  const handleRenameClick = (project, e) => {
+    e.stopPropagation()
+    setRenamingId(project.id)
+    setRenameValue(project.name)
+  }
+
+  const cancelRename = () => {
+    setRenamingId(null)
+    setRenameValue('')
+  }
+
+  const confirmRename = async (project) => {
+    const newName = renameValue.trim()
+    if (!newName || newName === project.name) {
+      cancelRename()
+      return
+    }
+    try {
+      await updateProject(project.id, { name: newName })
+      cancelRename()
+      await loadProjects()
+      // Keep the app's in-memory copy in sync if the active project was renamed
+      onProjectRenamed?.(project.id, newName)
+    } catch (err) {
+      console.error('Failed to rename project:', err)
+      setError('Failed to rename project')
+      cancelRename()
+    }
   }
 
   const handleOneOffMode = () => {
@@ -213,7 +246,24 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
                     </svg>
                   </div>
                   <div className="project-option-text">
-                    <strong>{project.name}</strong>
+                    {renamingId === project.id ? (
+                      <input
+                        type="text"
+                        className="project-rename-input"
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                        onBlur={() => confirmRename(project)}
+                        onKeyDown={(e) => {
+                          e.stopPropagation()
+                          if (e.key === 'Enter') confirmRename(project)
+                          if (e.key === 'Escape') cancelRename()
+                        }}
+                      />
+                    ) : (
+                      <strong>{project.name}</strong>
+                    )}
                     <span>
                       {formatDate(project.createdAt) && `Created ${formatDate(project.createdAt)}`}
                       {project.members?.length > 1 && ` · ${project.members.length} members`}
@@ -222,6 +272,15 @@ function ProjectSelector({ isOpen, onClose, currentProject, onSelectProject, onO
                   {currentProject?.id === project.id && (
                     <span className="active-badge">Active</span>
                   )}
+                  <button
+                    className="rename-project-btn"
+                    onClick={(e) => handleRenameClick(project, e)}
+                    title="Rename project"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                  </button>
                   <button
                     className="share-project-btn"
                     onClick={(e) => handleShareClick(project, e)}
