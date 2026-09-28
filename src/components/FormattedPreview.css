@@ -105,19 +105,19 @@
   margin: 0 0 8pt 0;
 }
 
+/* Mirrors Word's hanging indent: bullet at 0.25", text at 0.5", and wrapped
+   lines align with the text (not indented past it) */
 .preview-bullet {
   font-family: 'Open Sans', 'Calibri', sans-serif;
   font-size: 12pt;
   margin: 0 0 8pt 0;
-  padding-left: 0.5in;
-  text-indent: -0.25in;
+  padding-left: 0.25in;
   display: flex;
-  gap: 0.15in;
 }
 
 .preview-bullet .bullet-char {
   flex-shrink: 0;
-  width: 0.2in;
+  width: 0.25in;
 }
 
 .preview-takeaway-bullet .bullet-char {

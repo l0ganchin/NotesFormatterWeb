@@ -367,6 +367,12 @@ function AppContent() {
     // Create new AbortController for this request
     abortControllerRef.current = new AbortController()
 
+    // The manual flag can outlive its content (typed once, then cleared field
+    // by field) — empty fields always mean auto-detect, so the speaker still
+    // autofills the title and Attendees line
+    const hasManualRespondent =
+      respondentManuallyEdited && !!(respondentInfo.name || respondentInfo.role || respondentInfo.company)
+
     try {
       const result = await formatNotes(transcript, notes, apiKey, {
         takeawaysGuidance,
@@ -374,7 +380,7 @@ function AppContent() {
         quantCategories,
         includeImportance,
         detailLevel,
-        respondentInfo: respondentManuallyEdited ? respondentInfo : null,
+        respondentInfo: hasManualRespondent ? respondentInfo : null,
         coverageLevel,
         takeawayBullet,
         discussionBullet,
@@ -399,10 +405,11 @@ function AppContent() {
         setWarning('The output hit the model\'s length limit and may be cut off before the end of the transcript. Review the end of the document — consider a more focused coverage level or formatting the interview in sections.')
       }
 
-      if (!respondentManuallyEdited) {
+      if (!hasManualRespondent) {
         const detectedInfo = parseRespondentInfo(result.text)
         if (detectedInfo.name || detectedInfo.role || detectedInfo.company) {
           setRespondentInfo(detectedInfo)
+          setRespondentManuallyEdited(false)
         }
       }
 

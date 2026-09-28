@@ -32,7 +32,7 @@ function RespondentInput({
   return (
     <div className="respondent-input">
       <div className="respondent-header">
-        <label className="respondent-label">Call Info</label>
+        <label className="respondent-label">Speaker + Attendees</label>
         <div className="respondent-status">
           {isManuallyEdited && <span className="status-badge manual">Manual</span>}
           {!isManuallyEdited && hasContent && <span className="status-badge auto">Auto-filled</span>}

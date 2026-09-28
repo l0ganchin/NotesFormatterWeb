@@ -123,7 +123,8 @@ Every paragraph gets the template values as direct formatting: space After 8pt (
 ### Running header (`createRunningHeader`)
 When a `noteMeta` object is provided, the document gets a default header on every page: bold Segoe UI 12pt text `"[Project name]: [Type of Call] Notes"` left, and the full WG lockup logo (`src/assets/logo-horizontal-winterberrygroup-red.png`, embedded via `ImageRun`, 44px display height) pushed flush right by a right tab stop at 6.5". The logo is imported with Vite's `?inline` suffix (bundled as a base64 data URL) and decoded synchronously in `getLogo()` — no runtime fetch, so the image can never be dropped by a failed asset request. Its pixel dimensions are read from the PNG's IHDR chunk so swapping the asset rescales automatically (30px display height). `buildHeaderText(noteMeta)` is exported and shared with the preview.
 
-### Metadata block (`buildMetaRows` / `createMetaParagraphs`)
+### Metadata block (`buildMetaRows` / `createMetaParagraphs` / `enrichNoteMetaFromContent`)
+When `respondentName`/`companyLabel` are empty in `noteMeta`, `enrichNoteMetaFromContent` derives them from the note's own `### Name, Role, Company` title (via `parseRespondentInfo`), so the auto-detected speaker always lands on the Attendees line — in both the export and FormattedPreview.
 Directly under the title, three lines with bold labels are injected deterministically (never asked of the LLM): `Date:` (formatted from the date input, built from split Y/M/D parts to avoid the UTC-parse off-by-one), `[Company] Attendees:` (respondent name + extra attendees; label falls back to "Company"), and `WG Attendees:` (selected initials). All three rows always emit — an empty value leaves the line ready to fill in Word. `buildMetaRows(noteMeta)` is exported and shared with FormattedPreview so preview and export can't drift.
 
 ### `noteMeta` shape

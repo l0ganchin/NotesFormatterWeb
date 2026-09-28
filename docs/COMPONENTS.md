@@ -99,7 +99,7 @@ A text area with file upload and drag-and-drop support. Used twice in the input 
 ## `src/components/RespondentInput.jsx`
 
 ### Responsibility
-"Call Info" section: respondent Name/Role/Company fields (auto-fill or manual), interview date, and additional company attendees.
+"Speaker + Attendees" section: respondent Name/Role/Company fields (auto-fill or manual), interview date, and additional company attendees.
 
 ### Props
 | Prop | Type | Description |

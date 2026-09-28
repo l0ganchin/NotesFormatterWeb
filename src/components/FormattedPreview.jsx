@@ -1,4 +1,4 @@
-import { buildMetaRows, buildHeaderText } from '../services/export'
+import { buildMetaRows, buildHeaderText, enrichNoteMetaFromContent } from '../services/export'
 import logo from '../assets/logo-horizontal-winterberrygroup-red.png'
 import './FormattedPreview.css'
 
@@ -213,7 +213,9 @@ export default function FormattedPreview({
     }
   }
 
-  const elements = parseMarkdownToElements(stableContent, takeawayBullet, discussionBullet, noteMeta)
+  // Same title-line fallback as the export, so preview and .docx can't drift
+  const effectiveMeta = enrichNoteMetaFromContent(noteMeta, stableContent)
+  const elements = parseMarkdownToElements(stableContent, takeawayBullet, discussionBullet, effectiveMeta)
   const tailText = tail.replace(/[*#_]/g, '').replace(/^-\s*/, '').trim()
 
   return (

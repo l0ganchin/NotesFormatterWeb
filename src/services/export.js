@@ -16,6 +16,7 @@ import {
 import { saveAs } from 'file-saver'
 import { mergeDocxBlobs } from './docxMerge'
 import { CALL_TYPE_LABELS } from './presets'
+import { parseRespondentInfo } from './claude'
 // "?inline" makes Vite bundle the logo as a base64 data URL, so the header
 // image can never be lost to a failed asset fetch (dev, deployed, or offline)
 import logoDataUrl from '../assets/logo-horizontal-winterberrygroup-red.png?inline'
@@ -317,7 +318,25 @@ function createMetaParagraphs(noteMeta, config = DEFAULT_CONFIG) {
   )
 }
 
+// When the respondent fields are empty (auto-detect not yet applied, or state
+// out of sync), fall back to the note's own "### Name, Role, Company" title so
+// the speaker always appears on the "[Company] Attendees:" line
+export function enrichNoteMetaFromContent(noteMeta, markdownText) {
+  if (!noteMeta || !markdownText) return noteMeta
+  const hasName = (noteMeta.respondentName || '').trim()
+  const hasCompany = (noteMeta.companyLabel || '').trim()
+  if (hasName && hasCompany) return noteMeta
+
+  const detected = parseRespondentInfo(markdownText)
+  return {
+    ...noteMeta,
+    respondentName: hasName || detected.name,
+    companyLabel: hasCompany || detected.company,
+  }
+}
+
 export function parseMarkdownToDocx(markdownText, config = DEFAULT_CONFIG, noteMeta = null) {
+  noteMeta = enrichNoteMetaFromContent(noteMeta, markdownText)
   const paragraphs = []
 
   const lines = markdownText.trim().split('\n')
