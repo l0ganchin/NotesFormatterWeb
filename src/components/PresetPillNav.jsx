@@ -46,7 +46,7 @@ export default function PresetPillNav({
             disabled={isSaving || !activeDirty}
             title={activeDirty ? 'Save these parameters to this preset' : 'No unsaved changes'}
           >
-            {justSaved && !activeDirty ? 'Saved ✓' : isSaving ? 'Saving...' : 'Save'}
+            {justSaved && !activeDirty ? 'Saved ✓' : isSaving ? 'Saving...' : 'Save Template'}
           </button>
         )}
         {canSaveAs && (

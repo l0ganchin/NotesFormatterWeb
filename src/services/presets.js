@@ -12,7 +12,7 @@ export const CALL_TYPE_LABELS = {
 }
 
 // Full WG team roster for the "WG Attendees:" line, in canonical output order
-export const WG_TEAM = ['BB', 'MH', 'CP', 'BT', 'IS', 'TK', 'KR', 'ER', 'RD', 'LC', 'GN', 'KO', 'AM', 'SD', 'MK']
+export const WG_TEAM = ['BB', 'MH', 'JM', 'CP', 'IS', 'BT', 'KR', 'TK', 'JW', 'ER', 'RD', 'LC', 'GN', 'KO', 'AM', 'SD', 'MK']
 
 // Management takeaways template (the customer template's single source of
 // truth is getDefaultTakeawaysGuidance in claude.js)

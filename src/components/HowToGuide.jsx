@@ -53,7 +53,7 @@ export default function HowToGuide({ isOpen, onClose }) {
             <h3>Call Types &amp; Presets</h3>
             <ul>
               <li>The three pills at the top — <strong>Management, Customer, Expert</strong> — each hold their own saved parameters within a project, and the active pill becomes the "Type of Call" in the exported header.</li>
-              <li>In project mode, tweak any parameters and hit <strong>Save</strong> to persist them to the active pill. Unsaved changes show a dot on the pill and only apply to the current note.</li>
+              <li>In project mode, tweak any parameters and hit <strong>Save Template</strong> to persist them to the active pill. Unsaved changes show a dot on the pill and only apply to the current note.</li>
               <li>Switching pills keeps your unsaved edits — each pill remembers its own in-progress changes until you leave the project.</li>
               <li><strong>Save As…</strong> copies the current parameters into any preset slot of a new or existing project — handy for turning a one-off setup into a project, or reusing a template across projects.</li>
             </ul>

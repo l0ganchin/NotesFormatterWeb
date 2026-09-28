@@ -43,7 +43,8 @@ export default function WhatsNew({ isOpen, onClose, onOpenGuide }) {
               <strong>Call-type presets.</strong> Each project holds Management, Customer,
               and Expert presets — switch with the pills at the top; the active pill sets
               the Type of Call. Changes apply to the current note and persist only when you
-              hit Save; Save As… copies them into any preset of a new or existing project.
+              hit Save Template; Save As… copies them into any preset of a new or existing
+              project.
             </li>
             <li>
               <strong>Smarter file names.</strong> Documents save as "Winterberry Group --

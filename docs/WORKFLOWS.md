@@ -71,7 +71,7 @@
 ### Work with Presets
 1. User switches pills to load that call type's saved parameters
 2. Any edits apply to the current note immediately; a dot on the pill marks unsaved changes
-3. "Save" writes the active pill's parameters (+ Project Name) to Firestore
+3. "Save Template" writes the active pill's parameters (+ Project Name) to Firestore
 4. Switching pills or formatting never discards unsaved edits; selecting a different project or one-off mode does
 
 ### Save As (any signed-in user, one-off mode included)
