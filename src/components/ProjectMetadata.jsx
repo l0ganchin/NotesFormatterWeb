@@ -17,9 +17,9 @@ export default function ProjectMetadata({ projectName, onProjectNameChange, comp
         type="button"
         className="project-metadata-toggle"
         onClick={() => setIsExpanded(!isExpanded)}
+        title="Company & project name — used in the Word header and document title"
       >
         <span className={`toggle-icon ${isExpanded ? 'expanded' : ''}`}>▶</span>
-        <span>Project Metadata</span>
         <span className={`project-metadata-summary ${summary ? '' : 'empty'}`}>
           {summary || 'Set company & project name'}
         </span>

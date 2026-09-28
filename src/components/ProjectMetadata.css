@@ -24,14 +24,13 @@
 }
 
 .project-metadata-summary {
-  margin-left: auto;
   color: #3b82f6;
   font-size: 0.85rem;
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 65%;
+  min-width: 0;
 }
 
 .project-metadata-summary.empty {
